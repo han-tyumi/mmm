@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/han-tyumi/mcf/api"
+	"github.com/han-tyumi/mcf"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -18,9 +18,9 @@ var searchCmd = &cobra.Command{
 	Use:   "search [-s sortType] [-l limit] [-v version] term...",
 	Short: "Filter for mods by search terms",
 	Run: func(cmd *cobra.Command, args []string) {
-		mods, err := api.Many(&api.ManyParams{
+		mods, err := mcf.Search(&mcf.SearchParams{
 			Search:   strings.Join(args, " "),
-			Sort:     api.SortType(sort),
+			Sort:     mcf.SortType(sort),
 			PageSize: limit,
 			Version:  version,
 		})
@@ -59,7 +59,7 @@ func init() {
 	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
 }
 
-func modRow(mod *api.Mod) []string {
+func modRow(mod *mcf.Mod) []string {
 	return []string{
 		fmt.Sprint(mod.ID),
 		mod.Name,

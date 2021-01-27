@@ -5,56 +5,56 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/han-tyumi/mcf/api"
+	"github.com/han-tyumi/mcf"
 )
 
-var nameToSortType = map[string]api.SortType{
-	"0":        api.Featured,
-	"f":        api.Featured,
-	"feat":     api.Featured,
-	"featured": api.Featured,
+var nameToSortType = map[string]mcf.SortType{
+	"0":        mcf.Featured,
+	"f":        mcf.Featured,
+	"feat":     mcf.Featured,
+	"featured": mcf.Featured,
 
-	"1":          api.Popularity,
-	"p":          api.Popularity,
-	"pop":        api.Popularity,
-	"popularity": api.Popularity,
+	"1":          mcf.Popularity,
+	"p":          mcf.Popularity,
+	"pop":        mcf.Popularity,
+	"popularity": mcf.Popularity,
 
-	"2":          api.LastUpdate,
-	"l":          api.LastUpdate,
-	"last":       api.LastUpdate,
-	"u":          api.LastUpdate,
-	"up":         api.LastUpdate,
-	"update":     api.LastUpdate,
-	"lastupdate": api.LastUpdate,
+	"2":          mcf.LastUpdate,
+	"l":          mcf.LastUpdate,
+	"last":       mcf.LastUpdate,
+	"u":          mcf.LastUpdate,
+	"up":         mcf.LastUpdate,
+	"update":     mcf.LastUpdate,
+	"lastupdate": mcf.LastUpdate,
 
-	"3":    api.Name,
-	"n":    api.Name,
-	"name": api.Name,
+	"3":    mcf.Name,
+	"n":    mcf.Name,
+	"name": mcf.Name,
 
-	"4":      api.Author,
-	"a":      api.Author,
-	"auth":   api.Author,
-	"author": api.Author,
+	"4":      mcf.Author,
+	"a":      mcf.Author,
+	"auth":   mcf.Author,
+	"author": mcf.Author,
 
-	"5":              api.TotalDownloads,
-	"t":              api.TotalDownloads,
-	"total":          api.TotalDownloads,
-	"d":              api.TotalDownloads,
-	"down":           api.TotalDownloads,
-	"downloads":      api.TotalDownloads,
-	"totaldownloads": api.TotalDownloads,
+	"5":              mcf.TotalDownloads,
+	"t":              mcf.TotalDownloads,
+	"total":          mcf.TotalDownloads,
+	"d":              mcf.TotalDownloads,
+	"down":           mcf.TotalDownloads,
+	"downloads":      mcf.TotalDownloads,
+	"totaldownloads": mcf.TotalDownloads,
 }
 
-var sortTypeToName = map[api.SortType]string{
-	api.Featured:       "featured",
-	api.Popularity:     "popularity",
-	api.LastUpdate:     "lastupdate",
-	api.Name:           "name",
-	api.Author:         "author",
-	api.TotalDownloads: "totaldownloads",
+var sortTypeToName = map[mcf.SortType]string{
+	mcf.Featured:       "featured",
+	mcf.Popularity:     "popularity",
+	mcf.LastUpdate:     "lastupdate",
+	mcf.Name:           "name",
+	mcf.Author:         "author",
+	mcf.TotalDownloads: "totaldownloads",
 }
 
-type sortType api.SortType
+type sortType mcf.SortType
 
 func (t *sortType) Set(s string) error {
 	p := regexp.MustCompile("[^a-zA-Z0-9]+").ReplaceAllString(s, "")
@@ -73,5 +73,5 @@ func (t *sortType) Type() string {
 }
 
 func (t *sortType) String() string {
-	return sortTypeToName[api.SortType(*t)]
+	return sortTypeToName[mcf.SortType(*t)]
 }
