@@ -42,12 +42,12 @@ var getCmd = &cobra.Command{
 		for i := range mods {
 			mod := mods[i]
 
-			if len(mod.LatestFiles) == 0 {
-				fmt.Fprintf(os.Stderr, "no files for %s\n", mod.Name)
+			modFile, err := findFile(&mod)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
 				return
 			}
 
-			modFile := mod.LatestFiles[0]
 			name := path.Base(modFile.URL)
 
 			fmt.Printf("downloading %s ...\n", name)
@@ -84,6 +84,7 @@ func init() {
 	rootCmd.AddCommand(getCmd)
 
 	getCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add a mod based on its URL slug")
+	getCmd.Flags().StringVarP(&version, "version", "v", "", "Download the latest for a Minecraft version")
 }
 
 func modsByID(args []string) ([]mcf.Mod, error) {
@@ -132,4 +133,26 @@ func modsBySlug(args []string) ([]mcf.Mod, error) {
 	}
 
 	return mods, nil
+}
+
+func findFile(mod *mcf.Mod) (*mcf.ModFile, error) {
+	if len(mod.LatestFiles) == 0 {
+		return nil, fmt.Errorf("no files for %s", mod.Name)
+	}
+
+	if version == "" {
+		return &mod.LatestFiles[0], nil
+	}
+
+	files := mod.LatestFiles
+	for i := range files {
+		file := files[i]
+		for j := range file.Versions {
+			if file.Versions[j] == version {
+				return &file, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("%s not found for %s", version, mod.Name)
 }
