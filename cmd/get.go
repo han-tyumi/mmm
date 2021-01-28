@@ -15,7 +15,6 @@ import (
 
 var useSlug bool
 
-// getCmd represents the add command
 var getCmd = &cobra.Command{
 	Use:   "get [-s] ...{id | slug}",
 	Short: "Downloads the specified mods by ID",
@@ -31,12 +30,12 @@ var getCmd = &cobra.Command{
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return
+			os.Exit(1)
 		}
 
 		if len(mods) == 0 {
 			fmt.Fprintln(os.Stderr, "no mods found")
-			return
+			os.Exit(1)
 		}
 
 		for i := range mods {
@@ -45,7 +44,7 @@ var getCmd = &cobra.Command{
 			modFile, err := findFile(&mod)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				return
+				os.Exit(1)
 			}
 
 			name := path.Base(modFile.URL)
@@ -54,25 +53,25 @@ var getCmd = &cobra.Command{
 			res, err := http.Get(modFile.URL)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				return
+				os.Exit(1)
 			}
 			defer res.Body.Close()
 
 			if res.StatusCode != 200 {
 				fmt.Fprintln(os.Stderr, res.Status)
-				return
+				os.Exit(1)
 			}
 
 			file, err := os.Create(name)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				return
+				os.Exit(1)
 			}
 			defer file.Close()
 
 			if _, err := io.Copy(file, res.Body); err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				return
+				os.Exit(1)
 			}
 		}
 
