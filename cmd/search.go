@@ -25,7 +25,8 @@ var searchCmd = &cobra.Command{
 			Version:  version,
 		})
 		if err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, err)
+			return
 		}
 
 		if len(mods) == 0 {
