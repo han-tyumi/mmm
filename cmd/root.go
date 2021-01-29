@@ -40,7 +40,8 @@ func initConfig() {
 	}
 
 	viper.AddConfigPath(".")
-	viper.SetConfigName(".mmm")
+	viper.SetConfigName("mmm")
+	viper.SetConfigType("yml")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
