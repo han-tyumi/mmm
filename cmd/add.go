@@ -36,6 +36,8 @@ var addCmd = &cobra.Command{
 
 		if useSearch {
 			mods, err = modsBySearch(args)
+		} else if useSlug {
+			mods, err = modsBySlug(args)
 		} else {
 			mods, err = modsByID(args)
 		}
@@ -126,5 +128,6 @@ var addCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(addCmd)
 
-	addCmd.Flags().BoolVarP(&useSearch, "search", "s", false, "Add mods based on search terms")
+	addCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add mods based on its slug")
+	addCmd.Flags().BoolVarP(&useSearch, "search", "S", false, "Add mods based on search terms")
 }

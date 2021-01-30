@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var useSearch bool
+var useSlug, useSearch bool
 
 var getCmd = &cobra.Command{
 	Use:   "get [-s] ...{id | slug}",
@@ -26,6 +26,8 @@ var getCmd = &cobra.Command{
 
 		if useSearch {
 			mods, err = modsBySearch(args)
+		} else if useSlug {
+			mods, err = modsBySlug(args)
 		} else {
 			mods, err = modsByID(args)
 		}
@@ -84,7 +86,8 @@ var getCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVarP(&useSearch, "search", "s", false, "Add mods based on search terms")
+	getCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add mods based on its slug")
+	getCmd.Flags().BoolVarP(&useSearch, "search", "S", false, "Add mods based on search terms")
 	getCmd.Flags().StringVarP(&version, "version", "v", "", "Download the latest for a Minecraft version")
 
 	cfg.BindPFlag("version", getCmd.Flags().Lookup("version"))
@@ -122,21 +125,72 @@ func modsBySearch(args []string) ([]mcf.Mod, error) {
 	for i := range args {
 		arg := args[i]
 
-		m, err := mcf.Search(&mcf.SearchParams{
+		r, err := mcf.Search(&mcf.SearchParams{
 			PageSize: 1,
 			Search:   arg,
 			Version:  version,
 		})
 		if err != nil {
 			return nil, err
-		} else if len(m) == 0 {
+		} else if len(r) == 0 {
 			return nil, fmt.Errorf("%s not found", arg)
 		}
 
-		mods = append(mods, m[0])
+		mods = append(mods, r[0])
 	}
 
 	return mods, nil
+}
+
+var allMods []mcf.Mod
+
+func getAllMods() ([]mcf.Mod, error) {
+	if allMods != nil {
+		return allMods, nil
+	}
+
+	mods, err := mcf.Search(&mcf.SearchParams{
+		Version: version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	allMods = mods
+	return allMods, nil
+}
+
+func modsBySlug(args []string) ([]mcf.Mod, error) {
+	var mods []mcf.Mod
+
+	for i := range args {
+		arg := args[i]
+
+		mod, err := findBySlug(arg)
+		if err != nil {
+			return nil, err
+		}
+
+		mods = append(mods, *mod)
+	}
+
+	return mods, nil
+}
+
+func findBySlug(slug string) (*mcf.Mod, error) {
+	mods, err := getAllMods()
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range mods {
+		mod := mods[i]
+		if mod.Slug == slug {
+			return &mod, nil
+		}
+	}
+
+	return nil, fmt.Errorf("could not find mod with %s slug", slug)
 }
 
 func findFile(mod *mcf.Mod) (*mcf.ModFile, error) {
