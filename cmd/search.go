@@ -8,6 +8,7 @@ import (
 	"github.com/han-tyumi/mcf"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var version string
@@ -18,7 +19,7 @@ var searchCmd = &cobra.Command{
 	Use:   "search [-s sortType] [-l limit] [-v version] term...",
 	Short: "Filter for mods by search terms",
 	Run: func(cmd *cobra.Command, args []string) {
-		version = cfg.GetString("version")
+		version = viper.GetString("version")
 
 		mods, err := mcf.Search(&mcf.SearchParams{
 			Search:   strings.Join(args, " "),
@@ -61,7 +62,7 @@ func init() {
 	searchCmd.Flags().VarP(&sort, "sort", "s", "How to sort mod results")
 	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
 
-	cfg.BindPFlag("version", searchCmd.Flags().Lookup("version"))
+	viper.BindPFlag("version", searchCmd.Flags().Lookup("version"))
 }
 
 func modRow(mod *mcf.Mod) []string {

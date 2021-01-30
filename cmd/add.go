@@ -14,21 +14,22 @@ import (
 )
 
 type dependency struct {
-	Name string    `mapstructure:"name"`
-	Date time.Time `mapstructure:"date"`
-	Size uint      `mapstructure:"size"`
+	Name     string    `mapstructure:"name"`
+	File     string    `mapstructure:"file"`
+	Uploaded time.Time `mapstructure:"uploaded"`
+	Size     uint      `mapstructure:"size"`
 }
 
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Gets Minecraft CurseForge mods by ID and adds them to your dependency configuration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		if cfg.ConfigFileUsed() == "" {
+		if viper.ConfigFileUsed() == "" {
 			fmt.Fprintln(os.Stderr, "configuration file not found")
 			os.Exit(1)
 		}
 
-		version = cfg.GetString("version")
+		version = viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
 		var mods []mcf.Mod
@@ -55,35 +56,38 @@ var addCmd = &cobra.Command{
 		for i := range mods {
 			mod := mods[i]
 
-			modFile, err := findFile(&mod)
+			modFile, err := findLatestByMod(&mod)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			dep := &dependency{
-				Name: modFile.Name,
-				Date: modFile.Uploaded,
-				Size: modFile.Size,
+				Name:     mod.Name,
+				File:     modFile.Name,
+				Uploaded: modFile.Uploaded,
+				Size:     modFile.Size,
 			}
 
-			key := "mods>" + mod.Name
-			if cfg.IsSet(key) {
+			key := fmt.Sprintf("mods.%d", mod.ID)
+			if viper.IsSet(key) {
 				prev := &dependency{}
-				err := cfg.UnmarshalKey(key, prev,
+				err := viper.UnmarshalKey(key, prev,
 					viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				}
 
-				if prev.Name != dep.Name || prev.Date != dep.Date || prev.Size != dep.Size {
-					fmt.Printf("removing %s ...\n", prev.Name)
-					if err := os.Remove(prev.Name); err != nil {
+				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
+					fmt.Printf("removing %s ...\n", prev.File)
+					if err := os.Remove(prev.File); err != nil {
 						fmt.Fprintln(os.Stderr, err)
 						os.Exit(1)
 					}
-				} else {
+				}
+
+				if info, err := os.Stat(dep.File); err == nil && info.Size() == int64(dep.Size) {
 					fmt.Printf("skipping %s\n", mod.Name)
 					continue
 				}
@@ -114,8 +118,8 @@ var addCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			cfg.Set(key, dep)
-			if err := cfg.WriteConfig(); err != nil {
+			viper.Set(key, dep)
+			if err := viper.WriteConfig(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}

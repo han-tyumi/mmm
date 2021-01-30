@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var initCmd = &cobra.Command{
@@ -19,13 +20,13 @@ var initCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := cfg.SafeWriteConfig(); err != nil {
+		if err := viper.SafeWriteConfig(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
-		cfg.Set("version", args[0])
-		if err := cfg.WriteConfig(); err != nil {
+		viper.Set("version", args[0])
+		if err := viper.WriteConfig(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}

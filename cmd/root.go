@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfg = viper.NewWithOptions(viper.KeyDelimiter(">"))
-
 var cwd string
 
 var rootCmd = &cobra.Command{
@@ -41,13 +39,13 @@ func initConfig() {
 		}
 	}
 
-	cfg.AddConfigPath(".")
-	cfg.SetConfigName("mmm")
-	cfg.SetConfigType("yml")
+	viper.AddConfigPath(".")
+	viper.SetConfigName("mmm")
+	viper.SetConfigType("yml")
 
-	cfg.AutomaticEnv()
+	viper.AutomaticEnv()
 
-	if err := cfg.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", cfg.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 }
