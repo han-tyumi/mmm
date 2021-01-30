@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var cfg = viper.NewWithOptions(viper.KeyDelimiter(">"))
+
 var cwd string
 
 var rootCmd = &cobra.Command{
@@ -28,7 +30,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "C", "", "change the working directory")
+	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "c", "", "change the working directory")
 }
 
 func initConfig() {
@@ -39,12 +41,13 @@ func initConfig() {
 		}
 	}
 
-	viper.AddConfigPath(".")
-	viper.SetConfigName("mmm")
-	viper.SetConfigType("yml")
-	viper.AutomaticEnv()
+	cfg.AddConfigPath(".")
+	cfg.SetConfigName("mmm")
+	cfg.SetConfigType("yml")
 
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	cfg.AutomaticEnv()
+
+	if err := cfg.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", cfg.ConfigFileUsed())
 	}
 }

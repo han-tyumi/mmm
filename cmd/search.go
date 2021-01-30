@@ -18,6 +18,8 @@ var searchCmd = &cobra.Command{
 	Use:   "search [-s sortType] [-l limit] [-v version] term...",
 	Short: "Filter for mods by search terms",
 	Run: func(cmd *cobra.Command, args []string) {
+		version = cfg.GetString("version")
+
 		mods, err := mcf.Search(&mcf.SearchParams{
 			Search:   strings.Join(args, " "),
 			Sort:     mcf.SortType(sort),
@@ -58,6 +60,8 @@ func init() {
 	searchCmd.Flags().StringVarP(&version, "version", "v", "", "Minecraft version to filter by")
 	searchCmd.Flags().VarP(&sort, "sort", "s", "How to sort mod results")
 	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
+
+	cfg.BindPFlag("version", searchCmd.Flags().Lookup("version"))
 }
 
 func modRow(mod *mcf.Mod) []string {
@@ -66,6 +70,6 @@ func modRow(mod *mcf.Mod) []string {
 		mod.Name,
 		mod.Summary,
 		fmt.Sprint(mod.Downloads),
-		mod.Updated,
+		mod.Updated.Format("Jan 2 15:04 2006"),
 	}
 }

@@ -13,17 +13,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var useSlug bool
+var useSearch bool
 
 var getCmd = &cobra.Command{
 	Use:   "get [-s] ...{id | slug}",
 	Short: "Downloads the specified mods by ID",
 	Run: func(cmd *cobra.Command, args []string) {
+		version = cfg.GetString("version")
+
 		var mods []mcf.Mod
 		var err error
 
-		if useSlug {
-			mods, err = modsBySlug(args)
+		if useSearch {
+			mods, err = modsBySearch(args)
 		} else {
 			mods, err = modsByID(args)
 		}
@@ -82,8 +84,10 @@ var getCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add a mod based on its URL slug")
+	getCmd.Flags().BoolVarP(&useSearch, "search", "s", false, "Add mods based on search terms")
 	getCmd.Flags().StringVarP(&version, "version", "v", "", "Download the latest for a Minecraft version")
+
+	cfg.BindPFlag("version", getCmd.Flags().Lookup("version"))
 }
 
 func modsByID(args []string) ([]mcf.Mod, error) {
@@ -112,7 +116,7 @@ func modsByID(args []string) ([]mcf.Mod, error) {
 	return mods, nil
 }
 
-func modsBySlug(args []string) ([]mcf.Mod, error) {
+func modsBySearch(args []string) ([]mcf.Mod, error) {
 	var mods []mcf.Mod
 
 	for i := range args {
@@ -121,6 +125,7 @@ func modsBySlug(args []string) ([]mcf.Mod, error) {
 		m, err := mcf.Search(&mcf.SearchParams{
 			PageSize: 1,
 			Search:   arg,
+			Version:  version,
 		})
 		if err != nil {
 			return nil, err
@@ -140,18 +145,34 @@ func findFile(mod *mcf.Mod) (*mcf.ModFile, error) {
 	}
 
 	if version == "" {
-		return &mod.LatestFiles[0], nil
+		return &mod.LatestFiles[0].ModFile, nil
 	}
 
-	files := mod.LatestFiles
+	files, err := mcf.Files(mod.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var latest *mcf.ModFile
+
 	for i := range files {
 		file := files[i]
 		for j := range file.Versions {
-			if file.Versions[j] == version {
-				return &file, nil
+			if file.Versions[j] != version {
+				continue
 			}
+
+			if latest == nil || file.Uploaded.After(latest.Uploaded) {
+				latest = &file
+			}
+
+			break
 		}
 	}
 
-	return nil, fmt.Errorf("%s not found for %s", version, mod.Name)
+	if latest == nil {
+		return nil, fmt.Errorf("%s does not support %s", mod.Name, version)
+	}
+
+	return latest, nil
 }
