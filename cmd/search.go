@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/cmd/search"
+	"github.com/han-tyumi/mmm/cmd/table"
 	"github.com/han-tyumi/mmm/cmd/utils"
-
-	"github.com/olekukonko/tablewriter"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,9 +14,10 @@ import (
 
 var sort search.SortType
 var limit uint
+var format string
 
 var searchCmd = &cobra.Command{
-	Use:   "search [-s sortType] [-l limit] [-v version] term...",
+	Use:   "search [-s sortType] [-l limit] [-v version] [-f tableFormat] term...",
 	Short: "Filter for mods by search terms",
 	Run: func(cmd *cobra.Command, args []string) {
 		version := viper.GetString("version")
@@ -38,22 +36,7 @@ var searchCmd = &cobra.Command{
 			return
 		}
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Slug", "Name", "Summary", "Downloads", "Updated"})
-		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-		table.SetCenterSeparator("")
-		table.SetColumnSeparator("")
-		table.SetRowSeparator(" ")
-		table.SetBorder(false)
-		table.SetRowLine(true)
-		table.SetColWidth(24)
-
-		for i := range mods {
-			mod := mods[i]
-			table.Append(modRow(&mod))
-		}
-
+		table := table.SimpleTable(table.Format(format), mods)
 		table.Render()
 	},
 }
@@ -64,29 +47,7 @@ func init() {
 	searchCmd.Flags().StringP("version", "v", "", "Minecraft version to filter by")
 	searchCmd.Flags().VarP(&sort, "sort", "s", "How to sort mod results")
 	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
+	searchCmd.Flags().StringVarP(&format, "format", "f", table.DefaultFormat, "Table format to use")
 
 	viper.BindPFlag("version", searchCmd.Flags().Lookup("version"))
-}
-
-func modRow(mod *mcf.Mod) []string {
-	return []string{
-		fmt.Sprint(mod.ID),
-		mod.Slug,
-		mod.Name,
-		mod.Summary,
-		downloadsToString(mod.Downloads),
-		mod.Updated.Format("Jan 2 15:04 2006"),
-	}
-}
-
-func downloadsToString(downloads float64) string {
-	switch {
-	case downloads >= 1_000_000_000:
-		return fmt.Sprintf("%.1f B", downloads/1_000_000_000)
-	case downloads >= 1_000_000:
-		return fmt.Sprintf("%.1f M", downloads/1_000_000)
-	case downloads >= 1_000:
-		return fmt.Sprintf("%.1f K", downloads/1_000)
-	}
-	return fmt.Sprint(downloads)
 }
