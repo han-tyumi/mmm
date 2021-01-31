@@ -10,6 +10,8 @@ import (
 	"strconv"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/utils"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -34,13 +36,11 @@ var getCmd = &cobra.Command{
 		}
 
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 
 		if len(mods) == 0 {
-			fmt.Fprintln(os.Stderr, "no mods found")
-			os.Exit(1)
+			utils.Error("no mods found")
 		}
 
 		for i := range mods {
@@ -48,8 +48,7 @@ var getCmd = &cobra.Command{
 
 			modFile, err := findLatestByMod(&mod)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 
 			name := path.Base(modFile.URL)
@@ -57,26 +56,22 @@ var getCmd = &cobra.Command{
 			fmt.Printf("downloading %s ...\n", name)
 			res, err := http.Get(modFile.URL)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 			defer res.Body.Close()
 
 			if res.StatusCode != 200 {
-				fmt.Fprintln(os.Stderr, res.Status)
-				os.Exit(1)
+				utils.Error(res.Status)
 			}
 
 			file, err := os.Create(name)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 			defer file.Close()
 
 			if _, err := io.Copy(file, res.Body); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 		}
 

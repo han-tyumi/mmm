@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
+	"github.com/han-tyumi/mmm/cmd/utils"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -20,22 +21,20 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		utils.Error(err)
 	}
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "c", "", "change the working directory")
+	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "C", "", "change the working directory")
 }
 
 func initConfig() {
 	if cwd != "" {
 		if err := os.Chdir(cwd); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 	}
 

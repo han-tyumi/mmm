@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/utils"
+
 	"github.com/mitchellh/mapstructure"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,8 +29,7 @@ var addCmd = &cobra.Command{
 	Short: "Gets Minecraft CurseForge mods by ID and adds them to your dependency file",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
-			fmt.Fprintln(os.Stderr, "dependency file not found")
-			os.Exit(1)
+			utils.Error("dependency file not found")
 		}
 
 		version = viper.GetString("version")
@@ -45,13 +47,11 @@ var addCmd = &cobra.Command{
 		}
 
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 
 		if len(mods) == 0 {
-			fmt.Fprintln(os.Stderr, "no mods found")
-			os.Exit(1)
+			utils.Error("no mods found")
 		}
 
 		for i := range mods {
@@ -59,8 +59,7 @@ var addCmd = &cobra.Command{
 
 			modFile, err := findLatestByMod(&mod)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 
 			dep := &dependency{
@@ -77,15 +76,13 @@ var addCmd = &cobra.Command{
 				err := viper.UnmarshalKey(key, prev,
 					viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					os.Exit(1)
+					utils.Error(err)
 				}
 
 				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
 					fmt.Printf("removing %s ...\n", prev.File)
 					if err := os.Remove(prev.File); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-						os.Exit(1)
+						utils.Error(err)
 					}
 				}
 
@@ -98,32 +95,27 @@ var addCmd = &cobra.Command{
 			fmt.Printf("downloading %s ...\n", modFile.Name)
 			res, err := http.Get(modFile.URL)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 			defer res.Body.Close()
 
 			if res.StatusCode != 200 {
-				fmt.Fprintln(os.Stderr, res.Status)
-				os.Exit(1)
+				utils.Error(res.Status)
 			}
 
 			file, err := os.Create(modFile.Name)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 			defer file.Close()
 
 			if _, err := io.Copy(file, res.Body); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 
 			viper.Set(key, dep)
 			if err := viper.WriteConfig(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 		}
 

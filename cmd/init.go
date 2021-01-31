@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
-	"os"
+
+	"github.com/han-tyumi/mmm/cmd/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,14 +21,12 @@ var initCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := viper.SafeWriteConfig(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 
 		viper.Set("version", args[0])
 		if err := viper.WriteConfig(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 	},
 }

@@ -6,7 +6,10 @@ import (
 	"strings"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/utils"
+
 	"github.com/olekukonko/tablewriter"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,8 +31,7 @@ var searchCmd = &cobra.Command{
 			Version:  version,
 		})
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 
 		if len(mods) == 0 {

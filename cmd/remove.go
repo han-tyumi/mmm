@@ -6,7 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/han-tyumi/mmm/cmd/utils"
+
 	"github.com/mitchellh/mapstructure"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -22,8 +25,7 @@ var removeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
-			fmt.Fprintln(os.Stderr, "dependency file not found")
-			os.Exit(1)
+			utils.Error("dependency file not found")
 		}
 
 		version = viper.GetString("version")
@@ -33,13 +35,11 @@ var removeCmd = &cobra.Command{
 		err := viper.UnmarshalKey("mods", &modList,
 			viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			utils.Error(err)
 		}
 
 		if len(modList) == 0 {
-			fmt.Fprintln(os.Stderr, "no mods being managed")
-			os.Exit(1)
+			utils.Error("no mods being managed")
 		}
 
 		for i := range args {
@@ -53,16 +53,14 @@ var removeCmd = &cobra.Command{
 
 			fmt.Printf("removing %s ...\n", dep.File)
 			if err := os.Remove(dep.File); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 
 			delete(modList, arg)
 
 			viper.Set("mods", &modList)
 			if err := viper.WriteConfig(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				utils.Error(err)
 			}
 		}
 	},
