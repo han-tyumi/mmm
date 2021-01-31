@@ -23,7 +23,7 @@ var updateCmd = &cobra.Command{
 			utils.Error("dependency file not found")
 		}
 
-		version = viper.GetString("version")
+		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
 		modList := map[string]*dependency{}
@@ -38,7 +38,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		for slug, dep := range modList {
-			modFile, err := findLatestByID(dep.ID, dep.Name)
+			modFile, err := findLatestByID(version, dep.ID, dep.Name)
 			if err != nil {
 				utils.Error(err)
 			}

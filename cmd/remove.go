@@ -28,7 +28,7 @@ var removeCmd = &cobra.Command{
 			utils.Error("dependency file not found")
 		}
 
-		version = viper.GetString("version")
+		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
 		modList := map[string]*dependency{}

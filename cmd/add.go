@@ -32,16 +32,16 @@ var addCmd = &cobra.Command{
 			utils.Error("dependency file not found")
 		}
 
-		version = viper.GetString("version")
+		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
 		var mods []mcf.Mod
 		var err error
 
 		if useSearch {
-			mods, err = modsBySearch(args)
+			mods, err = modsBySearch(version, args)
 		} else if useSlug {
-			mods, err = modsBySlug(args)
+			mods, err = modsBySlug(version, args)
 		} else {
 			mods, err = modsByID(args)
 		}
@@ -57,7 +57,7 @@ var addCmd = &cobra.Command{
 		for i := range mods {
 			mod := mods[i]
 
-			modFile, err := findLatestByMod(&mod)
+			modFile, err := findLatestByMod(version, &mod)
 			if err != nil {
 				utils.Error(err)
 			}

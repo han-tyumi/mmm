@@ -26,12 +26,12 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(cobraInit)
 
 	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "C", "", "change the working directory")
 }
 
-func initConfig() {
+func cobraInit() {
 	if cwd != "" {
 		if err := os.Chdir(cwd); err != nil {
 			utils.Error(err)
@@ -42,9 +42,7 @@ func initConfig() {
 	viper.SetConfigName("mmm")
 	viper.SetConfigType("yml")
 
-	viper.AutomaticEnv()
-
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		fmt.Println("using config file:", viper.ConfigFileUsed())
 	}
 }

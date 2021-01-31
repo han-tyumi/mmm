@@ -1,4 +1,4 @@
-package cmd
+package search
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 
 	"github.com/han-tyumi/mcf"
 )
+
+// SortType is a wrapper of mcf.SortType that implements the pflag.Value interface.
+type SortType mcf.SortType
 
 var nameToSortType = map[string]mcf.SortType{
 	"0":        mcf.Featured,
@@ -54,24 +57,24 @@ var sortTypeToName = map[mcf.SortType]string{
 	mcf.TotalDownloads: "totaldownloads",
 }
 
-type sortType mcf.SortType
-
-func (t *sortType) Set(s string) error {
+// Set sets the value of the SortType for a given string argument.
+func (t *SortType) Set(s string) error {
 	p := regexp.MustCompile("[^a-zA-Z0-9]+").ReplaceAllString(s, "")
 	p = strings.ToLower(p)
 
 	if sort, ok := nameToSortType[p]; ok {
-		*t = sortType(sort)
+		*t = SortType(sort)
 		return nil
 	}
 
 	return fmt.Errorf("%s is not a valid sort type", s)
 }
 
-func (t *sortType) Type() string {
-	return "sortType"
+func (t *SortType) String() string {
+	return sortTypeToName[mcf.SortType(*t)]
 }
 
-func (t *sortType) String() string {
-	return sortTypeToName[mcf.SortType(*t)]
+// Type returns the type name for SortType.
+func (t *SortType) Type() string {
+	return "sortType"
 }

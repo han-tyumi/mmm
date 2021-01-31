@@ -22,15 +22,15 @@ var getCmd = &cobra.Command{
 	Use:   "get [-s] ...{id | slug}",
 	Short: "Downloads the specified mods by ID",
 	Run: func(cmd *cobra.Command, args []string) {
-		version = viper.GetString("version")
+		version := viper.GetString("version")
 
 		var mods []mcf.Mod
 		var err error
 
 		if useSearch {
-			mods, err = modsBySearch(args)
+			mods, err = modsBySearch(version, args)
 		} else if useSlug {
-			mods, err = modsBySlug(args)
+			mods, err = modsBySlug(version, args)
 		} else {
 			mods, err = modsByID(args)
 		}
@@ -46,7 +46,7 @@ var getCmd = &cobra.Command{
 		for i := range mods {
 			mod := mods[i]
 
-			modFile, err := findLatestByMod(&mod)
+			modFile, err := findLatestByMod(version, &mod)
 			if err != nil {
 				utils.Error(err)
 			}
@@ -84,7 +84,7 @@ func init() {
 
 	getCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add mods based on its slug")
 	getCmd.Flags().BoolVarP(&useSearch, "search", "S", false, "Add mods based on search terms")
-	getCmd.Flags().StringVarP(&version, "version", "v", "", "Download the latest for a Minecraft version")
+	getCmd.Flags().StringP("version", "v", "", "Download the latest for a Minecraft version")
 
 	viper.BindPFlag("version", getCmd.Flags().Lookup("version"))
 }
@@ -115,7 +115,7 @@ func modsByID(args []string) ([]mcf.Mod, error) {
 	return mods, nil
 }
 
-func modsBySearch(args []string) ([]mcf.Mod, error) {
+func modsBySearch(version string, args []string) ([]mcf.Mod, error) {
 	var mods []mcf.Mod
 
 	for i := range args {
@@ -140,7 +140,7 @@ func modsBySearch(args []string) ([]mcf.Mod, error) {
 
 var allMods []mcf.Mod
 
-func getAllMods() ([]mcf.Mod, error) {
+func getAllMods(version string) ([]mcf.Mod, error) {
 	if allMods != nil {
 		return allMods, nil
 	}
@@ -156,13 +156,13 @@ func getAllMods() ([]mcf.Mod, error) {
 	return allMods, nil
 }
 
-func modsBySlug(args []string) ([]mcf.Mod, error) {
+func modsBySlug(version string, args []string) ([]mcf.Mod, error) {
 	var mods []mcf.Mod
 
 	for i := range args {
 		arg := args[i]
 
-		mod, err := findBySlug(arg)
+		mod, err := findBySlug(version, arg)
 		if err != nil {
 			return nil, err
 		}
@@ -173,8 +173,8 @@ func modsBySlug(args []string) ([]mcf.Mod, error) {
 	return mods, nil
 }
 
-func findBySlug(slug string) (*mcf.Mod, error) {
-	mods, err := getAllMods()
+func findBySlug(version, slug string) (*mcf.Mod, error) {
+	mods, err := getAllMods(version)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func findBySlug(slug string) (*mcf.Mod, error) {
 	return nil, fmt.Errorf("could not find mod with %s slug", slug)
 }
 
-func findLatestByMod(mod *mcf.Mod) (*mcf.ModFile, error) {
+func findLatestByMod(version string, mod *mcf.Mod) (*mcf.ModFile, error) {
 	if version == "" {
 		if len(mod.LatestFiles) == 0 {
 			return nil, fmt.Errorf("no files for %s", mod.Name)
@@ -198,10 +198,10 @@ func findLatestByMod(mod *mcf.Mod) (*mcf.ModFile, error) {
 		return &mod.LatestFiles[0].ModFile, nil
 	}
 
-	return findLatestByID(mod.ID, mod.Name)
+	return findLatestByID(version, mod.ID, mod.Name)
 }
 
-func findLatestByID(id uint, name string) (*mcf.ModFile, error) {
+func findLatestByID(version string, id uint, name string) (*mcf.ModFile, error) {
 	files, err := mcf.Files(id)
 	if err != nil {
 		return nil, err

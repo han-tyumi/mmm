@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/search"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
 	"github.com/olekukonko/tablewriter"
@@ -14,15 +15,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-var version string
-var sort sortType
+var sort search.SortType
 var limit uint
 
 var searchCmd = &cobra.Command{
 	Use:   "search [-s sortType] [-l limit] [-v version] term...",
 	Short: "Filter for mods by search terms",
 	Run: func(cmd *cobra.Command, args []string) {
-		version = viper.GetString("version")
+		version := viper.GetString("version")
 
 		mods, err := mcf.Search(&mcf.SearchParams{
 			Search:   strings.Join(args, " "),
@@ -61,7 +61,7 @@ var searchCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(searchCmd)
 
-	searchCmd.Flags().StringVarP(&version, "version", "v", "", "Minecraft version to filter by")
+	searchCmd.Flags().StringP("version", "v", "", "Minecraft version to filter by")
 	searchCmd.Flags().VarP(&sort, "sort", "s", "How to sort mod results")
 	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
 
