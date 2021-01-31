@@ -37,7 +37,7 @@ var searchCmd = &cobra.Command{
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"ID", "Name", "Summary", "Downloads", "Updated"})
+		table.SetHeader([]string{"ID", "Slug", "Name", "Summary", "Downloads", "Updated"})
 		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 		table.SetAlignment(tablewriter.ALIGN_LEFT)
 		table.SetCenterSeparator("")
@@ -45,6 +45,7 @@ var searchCmd = &cobra.Command{
 		table.SetRowSeparator(" ")
 		table.SetBorder(false)
 		table.SetRowLine(true)
+		table.SetColWidth(24)
 
 		for i := range mods {
 			mod := mods[i]
@@ -68,9 +69,22 @@ func init() {
 func modRow(mod *mcf.Mod) []string {
 	return []string{
 		fmt.Sprint(mod.ID),
+		mod.Slug,
 		mod.Name,
 		mod.Summary,
-		fmt.Sprint(mod.Downloads),
+		downloadsToString(mod.Downloads),
 		mod.Updated.Format("Jan 2 15:04 2006"),
 	}
+}
+
+func downloadsToString(downloads float64) string {
+	switch {
+	case downloads >= 1_000_000_000:
+		return fmt.Sprintf("%.1f B", downloads/1_000_000_000)
+	case downloads >= 1_000_000:
+		return fmt.Sprintf("%.1f M", downloads/1_000_000)
+	case downloads >= 1_000:
+		return fmt.Sprintf("%.1f K", downloads/1_000)
+	}
+	return fmt.Sprint(downloads)
 }
