@@ -14,6 +14,7 @@ import (
 )
 
 type dependency struct {
+	ID       uint      `mapstructure:"id"`
 	Name     string    `mapstructure:"name"`
 	File     string    `mapstructure:"file"`
 	Uploaded time.Time `mapstructure:"uploaded"`
@@ -22,10 +23,10 @@ type dependency struct {
 
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Gets Minecraft CurseForge mods by ID and adds them to your dependency configuration file",
+	Short: "Gets Minecraft CurseForge mods by ID and adds them to your dependency file",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
-			fmt.Fprintln(os.Stderr, "configuration file not found")
+			fmt.Fprintln(os.Stderr, "dependency file not found")
 			os.Exit(1)
 		}
 
@@ -63,13 +64,14 @@ var addCmd = &cobra.Command{
 			}
 
 			dep := &dependency{
+				ID:       mod.ID,
 				Name:     mod.Name,
 				File:     modFile.Name,
 				Uploaded: modFile.Uploaded,
 				Size:     modFile.Size,
 			}
 
-			key := fmt.Sprintf("mods.%d", mod.ID)
+			key := "mods." + mod.Slug
 			if viper.IsSet(key) {
 				prev := &dependency{}
 				err := viper.UnmarshalKey(key, prev,

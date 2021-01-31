@@ -17,14 +17,14 @@ var updateCmd = &cobra.Command{
 	Short: "Updates all managed mods",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
-			fmt.Fprintln(os.Stderr, "configuration file not found")
+			fmt.Fprintln(os.Stderr, "dependency file not found")
 			os.Exit(1)
 		}
 
 		version = viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		modList := map[uint]*dependency{}
+		modList := map[string]*dependency{}
 		err := viper.UnmarshalKey("mods", &modList,
 			viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 		if err != nil {
@@ -37,8 +37,8 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		for id, dep := range modList {
-			modFile, err := findLatestByID(id, dep.Name)
+		for slug, dep := range modList {
+			modFile, err := findLatestByID(dep.ID, dep.Name)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -80,7 +80,7 @@ var updateCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			viper.Set(fmt.Sprintf("mods.%d", id), dep)
+			viper.Set("mods."+slug, dep)
 			if err := viper.WriteConfig(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
