@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
 	"github.com/mitchellh/mapstructure"
@@ -38,7 +39,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		for slug, dep := range modList {
-			modFile, err := findLatestByID(version, dep.ID, dep.Name)
+			modFile, err := get.LatestFileByID(version, dep.ID, dep.Name)
 			if err != nil {
 				utils.Error(err)
 			}

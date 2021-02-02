@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
 	"github.com/mitchellh/mapstructure"
@@ -39,11 +40,13 @@ var addCmd = &cobra.Command{
 		var err error
 
 		if useSearch {
-			mods, err = modsBySearch(version, args)
+			mods, err = get.ModsBySearch(args, version)
 		} else if useSlug {
-			mods, err = modsBySlug(version, args)
+			mods, err = get.ModsBySlug(args, version)
 		} else {
-			mods, err = modsByID(args)
+			if ids, err := utils.StringsToUints(args); err == nil {
+				mods, err = get.ModsByID(ids)
+			}
 		}
 
 		if err != nil {
@@ -57,7 +60,7 @@ var addCmd = &cobra.Command{
 		for i := range mods {
 			mod := mods[i]
 
-			modFile, err := findLatestByMod(version, &mod)
+			modFile, err := get.LatestFileByMod(version, &mod)
 			if err != nil {
 				utils.Error(err)
 			}
