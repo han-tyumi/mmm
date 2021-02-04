@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
@@ -26,8 +26,15 @@ type dependency struct {
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Gets Minecraft CurseForge mods by ID and adds them to your dependency file",
+	Use:   "add {id | slug}...",
+	Short: "Gets Minecraft CurseForge mods by ID or slug and adds them to your dependency file",
+	Args: func(_ *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return errors.New("no arguments specified")
+		}
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
 			utils.Error("dependency file not found")
@@ -36,25 +43,9 @@ var addCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		var mods []mcf.Mod
-		var err error
-
-		if useSearch {
-			mods, err = get.ModsBySearch(args, version)
-		} else if useSlug {
-			mods, err = get.ModsBySlug(args, version)
-		} else {
-			if ids, err := utils.StringsToUints(args); err == nil {
-				mods, err = get.ModsByID(ids)
-			}
-		}
-
+		mods, err := get.ModsByArgs(args, version)
 		if err != nil {
 			utils.Error(err)
-		}
-
-		if len(mods) == 0 {
-			utils.Error("no mods found")
 		}
 
 		for i := range mods {
@@ -128,7 +119,4 @@ var addCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(addCmd)
-
-	addCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add mods based on its slug")
-	addCmd.Flags().BoolVarP(&useSearch, "search", "S", false, "Add mods based on search terms")
 }

@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path"
 
-	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
@@ -15,33 +15,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-var useSlug, useSearch bool
-
 var getCmd = &cobra.Command{
-	Use:   "get [-s] ...{id | slug}",
-	Short: "Downloads the specified mods by ID",
+	Use:   "get [-v version] ...{id | slug}",
+	Short: "Downloads the specified mods by ID or slug",
+	Args: func(_ *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return errors.New("no arguments specified")
+		}
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		version := viper.GetString("version")
+		fmt.Printf("using Minecraft version %s\n", version)
 
-		var mods []mcf.Mod
-		var err error
-
-		if useSearch {
-			mods, err = get.ModsBySearch(args, version)
-		} else if useSlug {
-			mods, err = get.ModsBySlug(args, version)
-		} else {
-			if ids, err := utils.StringsToUints(args); err == nil {
-				mods, err = get.ModsByID(ids)
-			}
-		}
-
+		mods, err := get.ModsByArgs(args, version)
 		if err != nil {
 			utils.Error(err)
-		}
-
-		if len(mods) == 0 {
-			utils.Error("no mods found")
 		}
 
 		for i := range mods {
@@ -83,8 +73,6 @@ var getCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVarP(&useSlug, "slug", "s", false, "Add mods based on its slug")
-	getCmd.Flags().BoolVarP(&useSearch, "search", "S", false, "Add mods based on search terms")
 	getCmd.Flags().StringP("version", "v", "", "Download the latest for a Minecraft version")
 
 	viper.BindPFlag("version", getCmd.Flags().Lookup("version"))
