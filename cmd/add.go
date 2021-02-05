@@ -43,12 +43,7 @@ var addCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		mods, err := get.ModsByArgs(args, version)
-		if err != nil {
-			utils.Error(err)
-		}
-
-		if err := get.LatestFileForEachMod(mods, version, func(mod *mcf.Mod, latest *mcf.ModFile) error {
+		if err := get.LatestFileForEachArg(args, version, func(mod *mcf.Mod, latest *mcf.ModFile) error {
 			dep := &dependency{
 				ID:       mod.ID,
 				Name:     mod.Name,

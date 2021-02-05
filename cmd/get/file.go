@@ -54,8 +54,34 @@ func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) 
 	return latest, nil
 }
 
+// LatestFileCallback is called with a mod and its latest file.
+type LatestFileCallback func(mod *mcf.Mod, latest *mcf.ModFile) error
+
 // LatestFileForEachMod calls cb with the latest file for each mod and the given Minecraft version.
-func LatestFileForEachMod(mods []mcf.Mod, version string, cb func(mod *mcf.Mod, latest *mcf.ModFile) error) error {
+func LatestFileForEachMod(mods []mcf.Mod, version string, cb LatestFileCallback) error {
+	for i := range mods {
+		mod := mods[i]
+
+		latest, err := LatestFileByMod(version, &mod)
+		if err != nil {
+			return err
+		}
+
+		if err := cb(&mod, latest); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// LatestFileForEachArg calls cb with the latest file for each id or slug argument and the given Minecraft version.
+func LatestFileForEachArg(args []string, version string, cb LatestFileCallback) error {
+	mods, err := ModsByArgs(args, version)
+	if err != nil {
+		return err
+	}
+
 	for i := range mods {
 		mod := mods[i]
 

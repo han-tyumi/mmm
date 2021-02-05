@@ -27,12 +27,7 @@ var getCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		mods, err := get.ModsByArgs(args, version)
-		if err != nil {
-			utils.Error(err)
-		}
-
-		if err = get.LatestFileForEachMod(mods, version, func(_ *mcf.Mod, latest *mcf.ModFile) error {
+		if err := get.LatestFileForEachArg(args, version, func(_ *mcf.Mod, latest *mcf.ModFile) error {
 			fmt.Printf("downloading %s ...\n", latest.Name)
 			if err := download.FromURL(latest.Name, latest.URL); err != nil {
 				return err
