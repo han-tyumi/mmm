@@ -3,11 +3,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"time"
 
+	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/download"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
@@ -48,20 +48,13 @@ var addCmd = &cobra.Command{
 			utils.Error(err)
 		}
 
-		for i := range mods {
-			mod := mods[i]
-
-			modFile, err := get.LatestFileByMod(version, &mod)
-			if err != nil {
-				utils.Error(err)
-			}
-
+		if err := get.LatestFileForEachMod(mods, version, func(mod *mcf.Mod, latest *mcf.ModFile) error {
 			dep := &dependency{
 				ID:       mod.ID,
 				Name:     mod.Name,
-				File:     modFile.Name,
-				Uploaded: modFile.Uploaded,
-				Size:     modFile.Size,
+				File:     latest.Name,
+				Uploaded: latest.Uploaded,
+				Size:     latest.Size,
 			}
 
 			key := "mods." + mod.Slug
@@ -70,47 +63,35 @@ var addCmd = &cobra.Command{
 				err := viper.UnmarshalKey(key, prev,
 					viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 				if err != nil {
-					utils.Error(err)
+					return err
 				}
 
 				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
 					fmt.Printf("removing %s ...\n", prev.File)
 					if err := os.Remove(prev.File); err != nil {
-						utils.Error(err)
+						return err
 					}
 				}
 
 				if info, err := os.Stat(dep.File); err == nil && info.Size() == int64(dep.Size) {
 					fmt.Printf("skipping %s\n", mod.Name)
-					continue
+					return nil
 				}
 			}
 
-			fmt.Printf("downloading %s ...\n", modFile.Name)
-			res, err := http.Get(modFile.URL)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer res.Body.Close()
-
-			if res.StatusCode != 200 {
-				utils.Error(res.Status)
-			}
-
-			file, err := os.Create(modFile.Name)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer file.Close()
-
-			if _, err := io.Copy(file, res.Body); err != nil {
-				utils.Error(err)
+			fmt.Printf("downloading %s ...\n", latest.Name)
+			if err := download.FromURL(latest.Name, latest.URL); err != nil {
+				return err
 			}
 
 			viper.Set(key, dep)
 			if err := viper.WriteConfig(); err != nil {
-				utils.Error(err)
+				return err
 			}
+
+			return nil
+		}); err != nil {
+			utils.Error(err)
 		}
 
 		fmt.Println("done")

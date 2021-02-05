@@ -3,11 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path"
 
+	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/download"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
@@ -34,36 +32,14 @@ var getCmd = &cobra.Command{
 			utils.Error(err)
 		}
 
-		for i := range mods {
-			mod := mods[i]
-
-			modFile, err := get.LatestFileByMod(version, &mod)
-			if err != nil {
-				utils.Error(err)
+		if err = get.LatestFileForEachMod(mods, version, func(_ *mcf.Mod, latest *mcf.ModFile) error {
+			fmt.Printf("downloading %s ...\n", latest.Name)
+			if err := download.FromURL(latest.Name, latest.URL); err != nil {
+				return err
 			}
-
-			name := path.Base(modFile.URL)
-
-			fmt.Printf("downloading %s ...\n", name)
-			res, err := http.Get(modFile.URL)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer res.Body.Close()
-
-			if res.StatusCode != 200 {
-				utils.Error(res.Status)
-			}
-
-			file, err := os.Create(name)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer file.Close()
-
-			if _, err := io.Copy(file, res.Body); err != nil {
-				utils.Error(err)
-			}
+			return nil
+		}); err != nil {
+			utils.Error(err)
 		}
 
 		fmt.Println("done")

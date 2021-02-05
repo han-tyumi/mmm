@@ -53,3 +53,21 @@ func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) 
 
 	return latest, nil
 }
+
+// LatestFileForEachMod calls cb with the latest file for each mod and the given Minecraft version.
+func LatestFileForEachMod(mods []mcf.Mod, version string, cb func(mod *mcf.Mod, latest *mcf.ModFile) error) error {
+	for i := range mods {
+		mod := mods[i]
+
+		latest, err := LatestFileByMod(version, &mod)
+		if err != nil {
+			return err
+		}
+
+		if err := cb(&mod, latest); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
