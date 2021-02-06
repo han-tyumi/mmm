@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/han-tyumi/mcf"
-	"github.com/han-tyumi/mmm/cmd/utils"
+	"github.com/han-tyumi/mmm/utils"
 )
 
 // DefaultFormat is the default format used for displaying search results.

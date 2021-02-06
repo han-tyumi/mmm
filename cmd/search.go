@@ -5,8 +5,8 @@ import (
 
 	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/cmd/search"
-	"github.com/han-tyumi/mmm/cmd/table"
-	"github.com/han-tyumi/mmm/cmd/utils"
+	"github.com/han-tyumi/mmm/table"
+	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

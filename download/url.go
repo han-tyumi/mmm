@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/han-tyumi/mmm/cmd/utils"
+	"github.com/han-tyumi/mmm/utils"
 )
 
 // FromURL downloads a file from a URL to the current directory under a name.

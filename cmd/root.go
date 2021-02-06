@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/han-tyumi/mmm/cmd/utils"
+	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

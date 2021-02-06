@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/han-tyumi/mmm/cmd/config"
-	"github.com/han-tyumi/mmm/cmd/utils"
+	"github.com/han-tyumi/mmm/config"
+	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
