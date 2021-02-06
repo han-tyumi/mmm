@@ -7,23 +7,23 @@ import (
 	"github.com/han-tyumi/mcf"
 )
 
-var allMods map[string][]mcf.Mod
+var allMods = make(map[string][]mcf.Mod)
 
 // AllMods returns all the mods for a given Minecraft version.
-func AllMods(version string) (mods []mcf.Mod, err error) {
-	if m, ok := allMods[version]; ok {
-		return m, nil
+func AllMods(version string) ([]mcf.Mod, error) {
+	if mods, ok := allMods[version]; ok {
+		return mods, nil
 	}
 
-	mods, err = mcf.Search(&mcf.SearchParams{
+	mods, err := mcf.Search(&mcf.SearchParams{
 		Version: version,
 	})
-
-	if err == nil {
-		allMods[version] = mods
+	if err != nil {
+		return nil, err
 	}
 
-	return
+	allMods[version] = mods
+	return mods, nil
 }
 
 // ModsByArgs returns all mods for some given arguments and a Minecraft version.
@@ -70,7 +70,7 @@ func ModsBySlug(slugs []string, version string) ([]mcf.Mod, error) {
 			return nil, err
 		}
 
-		mods = append(mods, *mod)
+		mods[i] = *mod
 	}
 
 	return mods, nil
