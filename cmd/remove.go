@@ -29,31 +29,44 @@ var removeCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		deps, err := config.Deps()
+		depMap, err := config.DepMap()
 		if err != nil {
 			utils.Error(err)
 		}
 
+		ch := utils.NewErrCh(len(args))
 		for i := range args {
 			arg := args[i]
 
-			dep, ok := deps[arg]
-			if !ok {
-				fmt.Printf("slug, %s, not found\n", arg)
-				continue
-			}
+			go ch.Do(func() error {
+				dep, ok := depMap.Get(arg)
+				if !ok {
+					fmt.Printf("slug, %s, not found\n", arg)
+					return nil
+				}
 
-			fmt.Printf("removing %s ...\n", dep.File)
-			if err := os.Remove(dep.File); err != nil {
-				utils.Error(err)
-			}
+				fmt.Printf("removing %s ...\n", dep.File)
+				if err := os.Remove(dep.File); err != nil {
+					return err
+				}
+				depMap.Delete(arg)
 
-			delete(deps, arg)
-
-			if err := config.SetDeps(deps); err != nil {
-				utils.Error(err)
-			}
+				return nil
+			})
 		}
+
+		ch.Wait(func(err error) error {
+			if err != nil {
+				fmt.Println(err)
+			}
+			return nil
+		})
+
+		if err := depMap.Write(); err != nil {
+			utils.Error(err)
+		}
+
+		fmt.Println("done")
 	},
 }
 

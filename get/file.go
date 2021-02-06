@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/utils"
 )
 
 // LatestFileByMod returns the latest mod file for a mod and an optional Minecraft version.
@@ -54,46 +55,36 @@ func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) 
 	return latest, nil
 }
 
-// LatestFileCallback is called with a mod and its latest file.
+// LatestFileCallback is called concurrently with a mod and its latest file.
 type LatestFileCallback func(mod *mcf.Mod, latest *mcf.ModFile) error
 
-// LatestFileForEachMod calls cb with the latest file for each mod and the given Minecraft version.
+// LatestFileForEachMod concurrently calls cb with the latest file for each mod and the given Minecraft version.
 func LatestFileForEachMod(mods []mcf.Mod, version string, cb LatestFileCallback) error {
+	ch := utils.NewErrCh(len(mods))
 	for i := range mods {
 		mod := mods[i]
 
-		latest, err := LatestFileByMod(version, &mod)
-		if err != nil {
-			return err
-		}
+		go ch.Do(func() error {
+			latest, err := LatestFileByMod(version, &mod)
+			if err != nil {
+				return err
+			}
 
-		if err := cb(&mod, latest); err != nil {
-			return err
-		}
+			return cb(&mod, latest)
+		})
 	}
 
-	return nil
+	return ch.Wait(func(err error) error {
+		return err
+	})
 }
 
-// LatestFileForEachArg calls cb with the latest file for each id or slug argument and the given Minecraft version.
+// LatestFileForEachArg concurrently calls cb with the latest file for each id or slug argument and the given Minecraft version.
 func LatestFileForEachArg(args []string, version string, cb LatestFileCallback) error {
 	mods, err := ModsByArgs(args, version)
 	if err != nil {
 		return err
 	}
 
-	for i := range mods {
-		mod := mods[i]
-
-		latest, err := LatestFileByMod(version, &mod)
-		if err != nil {
-			return err
-		}
-
-		if err := cb(&mod, latest); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return LatestFileForEachMod(mods, version, cb)
 }

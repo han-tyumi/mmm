@@ -24,36 +24,47 @@ var updateCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		deps, err := config.Deps()
+		depMap, err := config.DepMapSync()
 		if err != nil {
 			utils.Error(err)
 		}
 
-		for slug, dep := range deps {
-			latest, err := get.LatestFileByID(version, dep.ID, dep.Name)
+		ch := utils.NewErrCh(len(depMap))
+		for slug, dep := range depMap {
+			slug := slug
+			dep := dep
+
+			go ch.Do(func() error {
+				latest, err := get.LatestFileByID(version, dep.ID, dep.Name)
+				if err != nil {
+					return err
+				}
+
+				if latest.Name == dep.File && latest.Uploaded == dep.Uploaded && latest.Size == dep.Size {
+					fmt.Printf("%s up to date\n", dep.Name)
+					return nil
+				}
+
+				fmt.Printf("removing %s ...\n", dep.File)
+				if err := os.Remove(dep.File); err != nil {
+					return err
+				}
+
+				fmt.Printf("downloading %s ...\n", latest.Name)
+				if err := download.FromURL(latest.Name, latest.URL); err != nil {
+					return err
+				}
+
+				return config.SetDep(slug, dep)
+			})
+		}
+
+		ch.Wait(func(err error) error {
 			if err != nil {
 				utils.Error(err)
 			}
-
-			if latest.Name == dep.File && latest.Uploaded == dep.Uploaded && latest.Size == dep.Size {
-				fmt.Printf("%s up to date\n", dep.Name)
-				continue
-			}
-
-			fmt.Printf("removing %s ...\n", dep.File)
-			if err := os.Remove(dep.File); err != nil {
-				utils.Error(err)
-			}
-
-			fmt.Printf("downloading %s ...\n", latest.Name)
-			if err := download.FromURL(latest.Name, latest.URL); err != nil {
-				utils.Error(err)
-			}
-
-			if err := config.SetDep(slug, dep); err != nil {
-				utils.Error(err)
-			}
-		}
+			return err
+		})
 
 		fmt.Println("done")
 	},
