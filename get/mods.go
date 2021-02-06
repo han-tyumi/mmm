@@ -9,14 +9,17 @@ import (
 	"github.com/han-tyumi/mmm/utils"
 )
 
-var allMods = make(map[string][]mcf.Mod)
-var allModsMu sync.Mutex
+var versionMods = make(map[string][]mcf.Mod)
+var versionModsMu sync.Mutex
+
+var versionSlugMod = make(map[string]map[string]*mcf.Mod)
+var versionSlugModMu sync.Mutex
 
 // AllMods returns all the mods for a given Minecraft version.
 func AllMods(version string) ([]mcf.Mod, error) {
-	allModsMu.Lock()
-	mods, ok := allMods[version]
-	allModsMu.Unlock()
+	versionModsMu.Lock()
+	mods, ok := versionMods[version]
+	versionModsMu.Unlock()
 
 	if ok {
 		return mods, nil
@@ -29,9 +32,13 @@ func AllMods(version string) ([]mcf.Mod, error) {
 		return nil, err
 	}
 
-	allModsMu.Lock()
-	allMods[version] = mods
-	allModsMu.Unlock()
+	versionModsMu.Lock()
+	versionMods[version] = mods
+	versionModsMu.Unlock()
+
+	versionSlugModMu.Lock()
+	versionSlugMod[version] = make(map[string]*mcf.Mod)
+	versionSlugModMu.Unlock()
 
 	return mods, nil
 }
@@ -122,16 +129,39 @@ func ModBySlug(slug, version string) (*mcf.Mod, error) {
 		return nil, err
 	}
 
+	versionSlugModMu.Lock()
+	mod, ok := versionSlugMod[version][slug]
+	versionSlugModMu.Unlock()
+
+	if ok {
+		return mod, nil
+	}
+
 	ch := make(chan *mcf.Mod)
 	for i := range mods {
 		i := i
 
 		go func() {
 			mod := mods[i]
+
+			versionSlugModMu.Lock()
+			_, ok := versionSlugMod[version][mod.Slug]
+			versionSlugModMu.Unlock()
+
+			if ok {
+				ch <- nil
+				return
+			}
+
+			versionSlugModMu.Lock()
+			versionSlugMod[version][mod.Slug] = &mod
+			versionSlugModMu.Unlock()
+
 			if mod.Slug == slug {
 				ch <- &mod
+			} else {
+				ch <- nil
 			}
-			ch <- nil
 		}()
 	}
 
