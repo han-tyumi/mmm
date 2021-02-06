@@ -2,15 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"time"
 
+	"github.com/han-tyumi/mmm/cmd/config"
+	"github.com/han-tyumi/mmm/cmd/download"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
-
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,24 +24,18 @@ var updateCmd = &cobra.Command{
 		version := viper.GetString("version")
 		fmt.Printf("using Minecraft version %s\n", version)
 
-		modList := map[string]*dependency{}
-		err := viper.UnmarshalKey("mods", &modList,
-			viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
+		deps, err := config.Deps()
 		if err != nil {
 			utils.Error(err)
 		}
 
-		if len(modList) == 0 {
-			utils.Error("no mods being managed")
-		}
-
-		for slug, dep := range modList {
-			modFile, err := get.LatestFileByID(version, dep.ID, dep.Name)
+		for slug, dep := range deps {
+			latest, err := get.LatestFileByID(version, dep.ID, dep.Name)
 			if err != nil {
 				utils.Error(err)
 			}
 
-			if modFile.Name == dep.File && modFile.Uploaded == dep.Uploaded && modFile.Size == dep.Size {
+			if latest.Name == dep.File && latest.Uploaded == dep.Uploaded && latest.Size == dep.Size {
 				fmt.Printf("%s up to date\n", dep.Name)
 				continue
 			}
@@ -54,29 +45,12 @@ var updateCmd = &cobra.Command{
 				utils.Error(err)
 			}
 
-			fmt.Printf("downloading %s ...\n", modFile.Name)
-			res, err := http.Get(modFile.URL)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer res.Body.Close()
-
-			if res.StatusCode != 200 {
-				utils.Error(res.Status)
-			}
-
-			file, err := os.Create(modFile.Name)
-			if err != nil {
-				utils.Error(err)
-			}
-			defer file.Close()
-
-			if _, err := io.Copy(file, res.Body); err != nil {
+			fmt.Printf("downloading %s ...\n", latest.Name)
+			if err := download.FromURL(latest.Name, latest.URL); err != nil {
 				utils.Error(err)
 			}
 
-			viper.Set("mods."+slug, dep)
-			if err := viper.WriteConfig(); err != nil {
+			if err := config.SetDep(slug, dep); err != nil {
 				utils.Error(err)
 			}
 		}

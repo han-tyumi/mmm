@@ -4,26 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/cmd/config"
 	"github.com/han-tyumi/mmm/cmd/download"
 	"github.com/han-tyumi/mmm/cmd/get"
 	"github.com/han-tyumi/mmm/cmd/utils"
 
-	"github.com/mitchellh/mapstructure"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type dependency struct {
-	ID       uint      `mapstructure:"id"`
-	Name     string    `mapstructure:"name"`
-	File     string    `mapstructure:"file"`
-	Uploaded time.Time `mapstructure:"uploaded"`
-	Size     uint      `mapstructure:"size"`
-}
 
 var addCmd = &cobra.Command{
 	Use:   "add {id | slug}...",
@@ -44,7 +34,7 @@ var addCmd = &cobra.Command{
 		fmt.Printf("using Minecraft version %s\n", version)
 
 		if err := get.LatestFileForEachArg(args, version, func(mod *mcf.Mod, latest *mcf.ModFile) error {
-			dep := &dependency{
+			dep := &config.Dependency{
 				ID:       mod.ID,
 				Name:     mod.Name,
 				File:     latest.Name,
@@ -52,15 +42,7 @@ var addCmd = &cobra.Command{
 				Size:     latest.Size,
 			}
 
-			key := "mods." + mod.Slug
-			if viper.IsSet(key) {
-				prev := &dependency{}
-				err := viper.UnmarshalKey(key, prev,
-					viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
-				if err != nil {
-					return err
-				}
-
+			if prev, err := config.Dep(mod.Slug); err == nil {
 				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
 					fmt.Printf("removing %s ...\n", prev.File)
 					if err := os.Remove(prev.File); err != nil {
@@ -79,8 +61,7 @@ var addCmd = &cobra.Command{
 				return err
 			}
 
-			viper.Set(key, dep)
-			if err := viper.WriteConfig(); err != nil {
+			if err := config.SetDep(mod.Slug, dep); err != nil {
 				return err
 			}
 
