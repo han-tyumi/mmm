@@ -3,15 +3,22 @@ package get
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/han-tyumi/mcf"
+	"github.com/han-tyumi/mmm/utils"
 )
 
 var allMods = make(map[string][]mcf.Mod)
+var allModsMu sync.Mutex
 
 // AllMods returns all the mods for a given Minecraft version.
 func AllMods(version string) ([]mcf.Mod, error) {
-	if mods, ok := allMods[version]; ok {
+	allModsMu.Lock()
+	mods, ok := allMods[version]
+	allModsMu.Unlock()
+
+	if ok {
 		return mods, nil
 	}
 
@@ -22,7 +29,10 @@ func AllMods(version string) ([]mcf.Mod, error) {
 		return nil, err
 	}
 
+	allModsMu.Lock()
 	allMods[version] = mods
+	allModsMu.Unlock()
+
 	return mods, nil
 }
 
@@ -31,15 +41,32 @@ func ModsByArgs(args []string, version string) ([]mcf.Mod, error) {
 	ids := make([]uint, 0)
 	slugs := make([]string, 0)
 
-	for i := range args {
-		arg := args[i]
+	var idsMu, slugsMu sync.Mutex
 
-		if id, err := strconv.ParseUint(arg, 10, 0); err == nil {
-			ids = append(ids, uint(id))
-		} else {
-			slugs = append(slugs, arg)
-		}
+	var wg sync.WaitGroup
+	wg.Add(len(args))
+
+	for i := range args {
+		i := i
+
+		go func() {
+			defer wg.Done()
+
+			arg := args[i]
+
+			if id, err := strconv.ParseUint(arg, 10, 0); err == nil {
+				idsMu.Lock()
+				ids = append(ids, uint(id))
+				idsMu.Unlock()
+			} else {
+				slugsMu.Lock()
+				slugs = append(slugs, arg)
+				slugsMu.Unlock()
+			}
+		}()
 	}
+
+	wg.Wait()
 
 	if len(ids) == 0 {
 		return ModsBySlug(slugs, version)
@@ -63,14 +90,26 @@ func ModsByArgs(args []string, version string) ([]mcf.Mod, error) {
 // ModsBySlug returns the mods corresponding to each URL slug.
 func ModsBySlug(slugs []string, version string) ([]mcf.Mod, error) {
 	mods := make([]mcf.Mod, len(slugs))
+	ch := utils.NewErrCh(len(slugs))
 
 	for i := range slugs {
-		mod, err := ModBySlug(slugs[i], version)
-		if err != nil {
-			return nil, err
-		}
+		i := i
 
-		mods[i] = *mod
+		go ch.Do(func() error {
+			mod, err := ModBySlug(slugs[i], version)
+			if err != nil {
+				return err
+			}
+
+			mods[i] = *mod
+			return nil
+		})
+	}
+
+	if err := ch.Wait(func(err error) error {
+		return err
+	}); err != nil {
+		return nil, err
 	}
 
 	return mods, nil
@@ -83,10 +122,22 @@ func ModBySlug(slug, version string) (*mcf.Mod, error) {
 		return nil, err
 	}
 
+	ch := make(chan *mcf.Mod)
 	for i := range mods {
-		mod := mods[i]
-		if mod.Slug == slug {
-			return &mod, nil
+		i := i
+
+		go func() {
+			mod := mods[i]
+			if mod.Slug == slug {
+				ch <- &mod
+			}
+			ch <- nil
+		}()
+	}
+
+	for range mods {
+		if mod := <-ch; mod != nil {
+			return mod, nil
 		}
 	}
 

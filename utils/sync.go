@@ -22,13 +22,12 @@ func (e *ErrChan) Do(fn func() error) {
 // Done signals that one of the processes is done with the given error value.
 func (e *ErrChan) Done(v error) {
 	e.ch <- v
-	e.n--
 }
 
 // Wait waits for all processes to call Done and sends results to the provided callback.
 // Waiting can be ended prematurely by returning an error in the callback.
 func (e *ErrChan) Wait(cb func(err error) error) error {
-	for e.n > 0 {
+	for i := 0; i < e.n; i++ {
 		if err := cb(<-e.ch); err != nil {
 			return err
 		}

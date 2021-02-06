@@ -2,6 +2,7 @@ package get
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/utils"
@@ -32,19 +33,46 @@ func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) 
 	}
 
 	var latest *mcf.ModFile
+	var latestMu sync.Mutex
+	latestCh := make(chan *mcf.ModFile)
 
 	for i := range files {
-		file := files[i]
-		for j := range file.Versions {
-			if file.Versions[j] != version {
-				continue
+		i := i
+
+		go func() {
+			file := files[i]
+			versionCh := make(chan bool)
+
+			for j := range file.Versions {
+				j := j
+
+				go func() {
+					versionCh <- file.Versions[j] == version
+				}()
 			}
 
-			if latest == nil || file.Uploaded.After(latest.Uploaded) {
-				latest = &file
+			for range file.Versions {
+				latestMu.Lock()
+				isBefore := latest != nil && file.Uploaded.Before(latest.Uploaded)
+				latestMu.Unlock()
+
+				if isBefore {
+					break
+				} else if <-versionCh {
+					latestCh <- &file
+					return
+				}
 			}
 
-			break
+			latestCh <- nil
+		}()
+	}
+
+	for range files {
+		if file := <-latestCh; file != nil && (latest == nil || file.Uploaded.After(latest.Uploaded)) {
+			latestMu.Lock()
+			latest = file
+			latestMu.Unlock()
 		}
 	}
 
@@ -62,9 +90,11 @@ type LatestFileCallback func(mod *mcf.Mod, latest *mcf.ModFile) error
 func LatestFileForEachMod(mods []mcf.Mod, version string, cb LatestFileCallback) error {
 	ch := utils.NewErrCh(len(mods))
 	for i := range mods {
-		mod := mods[i]
+		i := i
 
 		go ch.Do(func() error {
+			mod := mods[i]
+
 			latest, err := LatestFileByMod(version, &mod)
 			if err != nil {
 				return err

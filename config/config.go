@@ -30,20 +30,20 @@ type Dependency struct {
 
 // DependencyMap allows for safe concurrent usage of the map of a user's mod dependencies.
 type DependencyMap struct {
-	raw map[string]*Dependency
-	m   sync.Mutex
+	deps map[string]*Dependency
+	mu   sync.Mutex
 }
 
-var viperMutex sync.Mutex
+var viperMu sync.Mutex
 
 // DepMapSync safely returns a map of mod slugs to Dependencies for the user's configuration file.
 func DepMapSync() (map[string]*Dependency, error) {
 	raw := map[string]*Dependency{}
 
-	viperMutex.Lock()
+	viperMu.Lock()
 	err := viper.UnmarshalKey(ModsKey, &raw,
 		viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
-	viperMutex.Unlock()
+	viperMu.Unlock()
 
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func DepMap() (*DependencyMap, error) {
 	}
 
 	depMap := &DependencyMap{
-		raw: raw,
+		deps: raw,
 	}
 
 	return depMap, nil
@@ -70,43 +70,43 @@ func DepMap() (*DependencyMap, error) {
 
 // Get safely returns a Dependency for a given mod's slug if it's present in the map.
 func (d *DependencyMap) Get(slug string) (*Dependency, bool) {
-	d.m.Lock()
-	dep, ok := d.raw[slug]
-	d.m.Unlock()
+	d.mu.Lock()
+	dep, ok := d.deps[slug]
+	d.mu.Unlock()
 
 	return dep, ok
 }
 
 // Set safely sets the Dependency for a given mod's slug.
 func (d *DependencyMap) Set(slug string, dep *Dependency) {
-	d.m.Lock()
-	defer d.m.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	d.raw[slug] = dep
+	d.deps[slug] = dep
 }
 
 // Delete safely removes a Dependency for a given mod's slug if it's present in the map.
 func (d *DependencyMap) Delete(slug string) {
-	d.m.Lock()
-	defer d.m.Unlock()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	delete(d.raw, slug)
+	delete(d.deps, slug)
 }
 
 // Write safely writes all Dependency map information.
 func (d *DependencyMap) Write() error {
-	viperMutex.Lock()
-	defer viperMutex.Unlock()
+	viperMu.Lock()
+	defer viperMu.Unlock()
 
-	viper.Set(ModsKey, d.raw)
+	viper.Set(ModsKey, d.deps)
 	return viper.WriteConfig()
 }
 
 // Dep safely returns a Dependency for a given mod's slug.
 func Dep(slug string) (*Dependency, error) {
-	viperMutex.Lock()
+	viperMu.Lock()
 	isSet := viper.IsSet(slug)
-	viperMutex.Unlock()
+	viperMu.Unlock()
 
 	if !isSet {
 		return nil, ErrNotSet
@@ -114,10 +114,10 @@ func Dep(slug string) (*Dependency, error) {
 
 	dep := &Dependency{}
 
-	viperMutex.Lock()
+	viperMu.Lock()
 	err := viper.UnmarshalKey(ModsKey+"."+slug, dep,
 		viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
-	viperMutex.Unlock()
+	viperMu.Unlock()
 
 	if err != nil {
 		return nil, err
@@ -127,8 +127,8 @@ func Dep(slug string) (*Dependency, error) {
 
 // SetDep safely sets Dependency information for a given mod's slug.
 func SetDep(slug string, dep *Dependency) error {
-	viperMutex.Lock()
-	defer viperMutex.Unlock()
+	viperMu.Lock()
+	defer viperMu.Unlock()
 
 	viper.Set(ModsKey+"."+slug, dep)
 	return viper.WriteConfig()
