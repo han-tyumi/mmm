@@ -163,15 +163,6 @@ func ModBySlug(slug, version string) (*mcf.Mod, error) {
 			mod := mods[i]
 
 			versionSlugModMu.Lock()
-			_, ok := versionSlugMod[version][mod.Slug]
-			versionSlugModMu.Unlock()
-
-			if ok {
-				ch <- nil
-				return
-			}
-
-			versionSlugModMu.Lock()
 			versionSlugMod[version][mod.Slug] = &mod
 			versionSlugModMu.Unlock()
 
