@@ -104,8 +104,10 @@ func (d *DependencyMap) Write() error {
 
 // Dep safely returns a Dependency for a given mod's slug.
 func Dep(slug string) (*Dependency, error) {
+	key := ModsKey + "." + slug
+
 	viperMu.Lock()
-	isSet := viper.IsSet(slug)
+	isSet := viper.IsSet(key)
 	viperMu.Unlock()
 
 	if !isSet {
@@ -115,7 +117,7 @@ func Dep(slug string) (*Dependency, error) {
 	dep := &Dependency{}
 
 	viperMu.Lock()
-	err := viper.UnmarshalKey(ModsKey+"."+slug, dep,
+	err := viper.UnmarshalKey(key, dep,
 		viper.DecodeHook(mapstructure.StringToTimeHookFunc(time.RFC3339)))
 	viperMu.Unlock()
 

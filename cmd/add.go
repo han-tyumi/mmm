@@ -43,6 +43,7 @@ var addCmd = &cobra.Command{
 			}
 
 			if prev, err := config.Dep(mod.Slug); err == nil {
+				// remove older/previous files
 				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
 					fmt.Printf("removing %s ...\n", prev.File)
 					if err := os.Remove(prev.File); err != nil {
@@ -50,8 +51,9 @@ var addCmd = &cobra.Command{
 					}
 				}
 
+				// skip already downloaded files
 				if info, err := os.Stat(dep.File); err == nil && info.Size() == int64(dep.Size) {
-					fmt.Printf("skipping %s\n", mod.Name)
+					fmt.Printf("skipping %s\n", dep.Name)
 					return nil
 				}
 			}
