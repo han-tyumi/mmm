@@ -7,6 +7,7 @@ import (
 	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
 )
 
@@ -14,7 +15,8 @@ var cwd string
 
 var rootCmd = &cobra.Command{
 	Use:   "mmm",
-	Short: "Manages Minecraft CurseForge mods",
+	Short: "Minecraft Mod Manager",
+	Long:  "Manages Minecraft CurseForge mods",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -25,10 +27,18 @@ func Execute() {
 	}
 }
 
+// Markdown generates Markdown documentation for each command.
+func Markdown() {
+	err := doc.GenMarkdownTree(rootCmd, "docs")
+	if err != nil {
+		utils.Error(err)
+	}
+}
+
 func init() {
 	cobra.OnInitialize(cobraInit)
 
-	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "C", "", "change the working directory")
+	rootCmd.PersistentFlags().StringVarP(&cwd, "cwd", "C", "", "changes the current working directory")
 }
 
 func cobraInit() {

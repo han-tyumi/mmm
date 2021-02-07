@@ -10,7 +10,7 @@ import (
 // DefaultFormat is the default format used for displaying search results.
 const DefaultFormat = "{id} {slug} {name} {downloads} {updated}"
 
-var tagHeader = map[string]string{
+var tokenHeader = map[string]string{
 	"{id}":         "ID",
 	"{slug}":       "Slug",
 	"{name}":       "Name",
@@ -24,7 +24,7 @@ var tagHeader = map[string]string{
 	"{created}":    "Created",
 }
 
-var tagFormatter = map[string]func(*mcf.Mod) (value string){
+var tokenFormatter = map[string]func(*mcf.Mod) (value string){
 	"{id}":       func(mod *mcf.Mod) string { return fmt.Sprint(mod.ID) },
 	"{slug}":     func(mod *mcf.Mod) string { return mod.Slug },
 	"{name}":     func(mod *mcf.Mod) string { return mod.Name },
@@ -53,26 +53,26 @@ type Format string
 
 // Headers returns the table header names for the Format.
 func (f *Format) Headers() (headers []string) {
-	var tag, header string
+	var token, header string
 
 	for _, r := range *f {
 		switch {
-		case tag != "":
-			tag += string(r)
+		case token != "":
+			token += string(r)
 
 			if r != '}' {
 				continue
 			}
 
-			if h, ok := tagHeader[tag]; ok {
+			if h, ok := tokenHeader[token]; ok {
 				header += h
 			} else {
-				header += tag
+				header += token
 			}
 
-			tag = ""
+			token = ""
 		case r == '{':
-			tag += string(r)
+			token += string(r)
 		case r == ' ':
 			if header == "" {
 				continue
@@ -94,26 +94,26 @@ func (f *Format) Headers() (headers []string) {
 
 // Values returns the table values for a given mod and Format.
 func (f *Format) Values(mod *mcf.Mod) (values []string) {
-	var tag, value string
+	var token, value string
 
 	for _, r := range *f {
 		switch {
-		case tag != "":
-			tag += string(r)
+		case token != "":
+			token += string(r)
 
 			if r != '}' {
 				continue
 			}
 
-			if format, ok := tagFormatter[tag]; ok {
+			if format, ok := tokenFormatter[token]; ok {
 				value += format(mod)
 			} else {
-				value += tag
+				value += token
 			}
 
-			tag = ""
+			token = ""
 		case r == '{':
-			tag += string(r)
+			token += string(r)
 		case r == ' ':
 			if value == "" {
 				continue

@@ -10,8 +10,8 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initializes a .mmm.yml dependency file with a Minecraft version if it does not exist",
+	Use:   "init version",
+	Short: "Initializes a mod dependency file using a Minecraft version",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("a Minecraft version argument is required")

@@ -17,7 +17,7 @@ import (
 
 var addCmd = &cobra.Command{
 	Use:   "add {id | slug}...",
-	Short: "Gets Minecraft CurseForge mods by ID or slug and adds them to your dependency file",
+	Short: "Downloads and adds mods to your dependency file by slug or ID",
 	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return errors.New("no arguments specified")

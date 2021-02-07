@@ -12,13 +12,33 @@ import (
 	"github.com/spf13/viper"
 )
 
-var sort search.SortType
+var sort = search.SortType(mcf.Featured)
 var limit uint
 var format string
 
 var searchCmd = &cobra.Command{
-	Use:   "search [-s sortType] [-l limit] [-v version] [-f tableFormat] term...",
-	Short: "Filter for mods by search terms",
+	Use:   "search [terms]...",
+	Short: "Displays search results for Minecraft CurseForge mods",
+	Long: strings.ReplaceAll(`#### Sort Types
+- ^featured, feat, f, 0^
+- ^popularity, pop, p, 1^
+- ^lastupdate, update, up, u, last, l, 2^
+- ^name, n, 3^
+- ^author, auth, a, 4^
+- ^totaldownloads, downloads, down, d, total, t, 5^
+
+#### Table Format Tokens
+- ^{id}^
+- ^{slug}^
+- ^{name}^
+- ^{language}^
+- ^{url}^
+- ^{rank}^
+- ^{popularity}^
+- ^{downloads}^
+- ^{updated}^
+- ^{released}^
+- ^{created}^`, "^", "`"),
 	Run: func(cmd *cobra.Command, args []string) {
 		version := viper.GetString("version")
 
@@ -45,9 +65,9 @@ func init() {
 	rootCmd.AddCommand(searchCmd)
 
 	searchCmd.Flags().StringP("version", "v", "", "Minecraft version to filter by")
-	searchCmd.Flags().VarP(&sort, "sort", "s", "How to sort mod results")
-	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "How many results to return")
-	searchCmd.Flags().StringVarP(&format, "format", "f", table.DefaultFormat, "Table format to use")
+	searchCmd.Flags().VarP(&sort, "sort", "s", "how to sort mod results")
+	searchCmd.Flags().UintVarP(&limit, "limit", "l", 5, "how many results to return")
+	searchCmd.Flags().StringVarP(&format, "format", "f", table.DefaultFormat, "table format to use")
 
 	viper.BindPFlag("version", searchCmd.Flags().Lookup("version"))
 }

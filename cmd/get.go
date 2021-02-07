@@ -14,8 +14,8 @@ import (
 )
 
 var getCmd = &cobra.Command{
-	Use:   "get [-v version] ...{id | slug}",
-	Short: "Downloads the specified mods by ID or slug",
+	Use:   "get {id | slug}...",
+	Short: "Downloads unmanaged mods to the current working directory by slug or ID",
 	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return errors.New("no arguments specified")
@@ -44,7 +44,7 @@ var getCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	getCmd.Flags().StringP("version", "v", "", "Download the latest for a Minecraft version")
+	getCmd.Flags().StringP("version", "v", "", "Minecraft version to download latest files for")
 
 	viper.BindPFlag("version", getCmd.Flags().Lookup("version"))
 }
