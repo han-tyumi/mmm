@@ -30,8 +30,53 @@ import (
 var versionMods = make(map[string][]mcf.Mod)
 var versionModsMu sync.Mutex
 
+// TODO: create new struct to use mutex for each version
 var versionSlugMod = make(map[string]map[string]*mcf.Mod)
 var versionSlugModMu sync.Mutex
+
+// AllModsBySlug returns all mods for a given Minecraft version mapped by their slugs.
+func AllModsBySlug(version string) (map[string]*mcf.Mod, error) {
+	versionSlugModMu.Lock()
+	slugMod, ok := versionSlugMod[version]
+	versionSlugModMu.Unlock()
+
+	if ok {
+		return slugMod, nil
+	}
+
+	mods, err := AllMods(version)
+	if err != nil {
+		return nil, err
+	}
+
+	slugMod = make(map[string]*mcf.Mod)
+	var mu sync.Mutex
+
+	var wg sync.WaitGroup
+	wg.Add(len(mods))
+
+	for i := range mods {
+		i := i
+
+		go func() {
+			mod := mods[i]
+
+			mu.Lock()
+			slugMod[mod.Slug] = &mod
+			mu.Unlock()
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	versionSlugModMu.Lock()
+	versionSlugMod[version] = slugMod
+	versionSlugModMu.Unlock()
+
+	return slugMod, nil
+}
 
 // AllMods returns all the mods for a given Minecraft version.
 func AllMods(version string) ([]mcf.Mod, error) {
@@ -53,10 +98,6 @@ func AllMods(version string) ([]mcf.Mod, error) {
 	versionModsMu.Lock()
 	versionMods[version] = mods
 	versionModsMu.Unlock()
-
-	versionSlugModMu.Lock()
-	versionSlugMod[version] = make(map[string]*mcf.Mod)
-	versionSlugModMu.Unlock()
 
 	return mods, nil
 }
@@ -117,17 +158,28 @@ func ModsBySlug(slugs []string, version string) ([]mcf.Mod, error) {
 	mods := make([]mcf.Mod, len(slugs))
 	ch := utils.NewErrCh(len(slugs))
 
+	slugMod, err := AllModsBySlug(version)
+	if err != nil {
+		return nil, err
+	}
+
+	var mu sync.Mutex
+
 	for i := range slugs {
 		i := i
 
 		go ch.Do(func() error {
-			mod, err := ModBySlug(slugs[i], version)
-			if err != nil {
-				return err
-			}
+			slug := slugs[i]
 
-			mods[i] = *mod
-			return nil
+			mu.Lock()
+			mod, ok := slugMod[slug]
+			mu.Unlock()
+
+			if ok {
+				mods[i] = *mod
+				return nil
+			}
+			return fmt.Errorf("could not find mod with slug, %s", slug)
 		})
 	}
 
@@ -138,47 +190,4 @@ func ModsBySlug(slugs []string, version string) ([]mcf.Mod, error) {
 	}
 
 	return mods, nil
-}
-
-// ModBySlug returns a mod by its URL slug.
-func ModBySlug(slug, version string) (*mcf.Mod, error) {
-	mods, err := AllMods(version)
-	if err != nil {
-		return nil, err
-	}
-
-	versionSlugModMu.Lock()
-	mod, ok := versionSlugMod[version][slug]
-	versionSlugModMu.Unlock()
-
-	if ok {
-		return mod, nil
-	}
-
-	ch := make(chan *mcf.Mod)
-	for i := range mods {
-		i := i
-
-		go func() {
-			mod := mods[i]
-
-			versionSlugModMu.Lock()
-			versionSlugMod[version][mod.Slug] = &mod
-			versionSlugModMu.Unlock()
-
-			if mod.Slug == slug {
-				ch <- &mod
-			} else {
-				ch <- nil
-			}
-		}()
-	}
-
-	for range mods {
-		if mod := <-ch; mod != nil {
-			return mod, nil
-		}
-	}
-
-	return nil, fmt.Errorf("could not find mod with slug, %s", slug)
 }
