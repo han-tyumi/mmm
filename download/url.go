@@ -19,11 +19,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package download
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/han-tyumi/mmm/utils"
 )
 
 // FromURL downloads a file from a URL to the current directory under a name.
@@ -35,7 +34,7 @@ func FromURL(name, url string) error {
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		utils.Error(res.Status)
+		return errors.New(res.Status)
 	}
 
 	file, err := os.Create(name)
@@ -48,5 +47,5 @@ func FromURL(name, url string) error {
 		return err
 	}
 
-	return nil
+	return os.Chmod(name, 0755)
 }
