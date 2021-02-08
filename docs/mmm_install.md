@@ -1,15 +1,16 @@
-## mmm update
+## mmm install
 
-Updates all managed mods
+Installs all mods being managed within a configuration file
 
 ```
-mmm update [flags]
+mmm install [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update
+  -f, --force   overwrite existing mods
+  -h, --help    help for install
 ```
 
 ### Options inherited from parent commands
