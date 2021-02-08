@@ -54,6 +54,7 @@ var addCmd = &cobra.Command{
 			dep := &config.Dependency{
 				ID:       mod.ID,
 				Name:     mod.Name,
+				URL:      latest.URL,
 				File:     latest.Name,
 				Uploaded: latest.Uploaded,
 				Size:     latest.Size,

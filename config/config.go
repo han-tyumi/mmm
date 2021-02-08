@@ -41,6 +41,7 @@ var ErrNoMods = errors.New("no mods being managed")
 type Dependency struct {
 	ID       uint      `mapstructure:"id"`
 	Name     string    `mapstructure:"name"`
+	URL      string    `mapstructure:"url"`
 	File     string    `mapstructure:"file"`
 	Uploaded time.Time `mapstructure:"uploaded"`
 	Size     uint      `mapstructure:"size"`
