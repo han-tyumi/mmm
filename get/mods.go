@@ -27,9 +27,6 @@ import (
 	"github.com/han-tyumi/mmm/utils"
 )
 
-var versionMods = make(map[string][]mcf.Mod)
-var versionModsMu sync.Mutex
-
 // TODO: create new struct to use mutex for each version
 var versionSlugMod = make(map[string]map[string]*mcf.Mod)
 var versionSlugModMu sync.Mutex
@@ -44,7 +41,9 @@ func AllModsBySlug(version string) (map[string]*mcf.Mod, error) {
 		return slugMod, nil
 	}
 
-	mods, err := AllMods(version)
+	mods, err := mcf.Search(&mcf.SearchParams{
+		Version: version,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -76,30 +75,6 @@ func AllModsBySlug(version string) (map[string]*mcf.Mod, error) {
 	versionSlugModMu.Unlock()
 
 	return slugMod, nil
-}
-
-// AllMods returns all the mods for a given Minecraft version.
-func AllMods(version string) ([]mcf.Mod, error) {
-	versionModsMu.Lock()
-	mods, ok := versionMods[version]
-	versionModsMu.Unlock()
-
-	if ok {
-		return mods, nil
-	}
-
-	mods, err := mcf.Search(&mcf.SearchParams{
-		Version: version,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	versionModsMu.Lock()
-	versionMods[version] = mods
-	versionModsMu.Unlock()
-
-	return mods, nil
 }
 
 // ModsByArgs returns all mods for some given arguments and a Minecraft version.
