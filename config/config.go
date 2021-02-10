@@ -37,16 +37,6 @@ var ErrNotSet = errors.New("not set")
 // ErrNoMods is returned when there are no mods being managed.
 var ErrNoMods = errors.New("no mods being managed")
 
-// Dependency is a mod managed in the user's dependency configuration file.
-type Dependency struct {
-	ID       uint      `mapstructure:"id"`
-	Name     string    `mapstructure:"name"`
-	URL      string    `mapstructure:"url"`
-	File     string    `mapstructure:"file"`
-	Uploaded time.Time `mapstructure:"uploaded"`
-	Size     uint      `mapstructure:"size"`
-}
-
 // DependencyMap allows for safe concurrent usage of the map of a user's mod dependencies.
 type DependencyMap struct {
 	deps map[string]*Dependency

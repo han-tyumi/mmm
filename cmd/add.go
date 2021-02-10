@@ -20,11 +20,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/config"
-	"github.com/han-tyumi/mmm/download"
 	"github.com/han-tyumi/mmm/get"
 	"github.com/han-tyumi/mmm/utils"
 
@@ -62,30 +60,26 @@ var addCmd = &cobra.Command{
 
 			if prev, err := config.Dep(mod.Slug); err == nil {
 				// remove older/previous files
-				if prev.File != dep.File || prev.Uploaded != dep.Uploaded || prev.Size != dep.Size {
+				if !dep.SameDepFile(prev) {
 					fmt.Printf("removing %s ...\n", prev.File)
-					if err := os.Remove(prev.File); err != nil {
+					if err := prev.RemoveFile(); err != nil {
 						return err
 					}
 				}
 
 				// skip already downloaded files
-				if info, err := os.Stat(dep.File); err == nil && info.Size() == int64(dep.Size) {
-					fmt.Printf("skipping %s\n", dep.Name)
+				if downloaded, _ := dep.Downloaded(); downloaded {
+					fmt.Printf("%s already added\n", dep.Name)
 					return nil
 				}
 			}
 
-			fmt.Printf("downloading %s ...\n", latest.Name)
-			if err := download.FromURL(latest.Name, latest.URL); err != nil {
+			fmt.Printf("downloading %s ...\n", dep.File)
+			if err := dep.Download(); err != nil {
 				return err
 			}
 
-			if err := config.SetDep(mod.Slug, dep); err != nil {
-				return err
-			}
-
-			return nil
+			return config.SetDep(mod.Slug, dep)
 		}); err != nil {
 			utils.Error(err)
 		}

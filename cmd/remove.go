@@ -20,7 +20,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/han-tyumi/mmm/config"
 	"github.com/han-tyumi/mmm/utils"
@@ -63,7 +62,7 @@ var removeCmd = &cobra.Command{
 				}
 
 				fmt.Printf("removing %s ...\n", dep.File)
-				if err := os.Remove(dep.File); err != nil {
+				if err := dep.RemoveFile(); err != nil {
 					return err
 				}
 				depMap.Delete(arg)

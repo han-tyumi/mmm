@@ -19,11 +19,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/han-tyumi/mmm/config"
-	"github.com/han-tyumi/mmm/download"
-	"github.com/han-tyumi/mmm/get"
 	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
@@ -52,23 +49,25 @@ var updateCmd = &cobra.Command{
 			dep := dep
 
 			go ch.Do(func() error {
-				latest, err := get.LatestFileByID(version, dep.ID, dep.Name)
+				latest, err := dep.LatestFile(version)
 				if err != nil {
 					return err
 				}
 
-				if latest.Name == dep.File && latest.Uploaded == dep.Uploaded && latest.Size == dep.Size {
+				if dep.SameFile(latest) {
 					fmt.Printf("%s up to date\n", dep.Name)
 					return nil
 				}
 
 				fmt.Printf("removing %s ...\n", dep.File)
-				if err := os.Remove(dep.File); err != nil {
+				if err := dep.RemoveFile(); err != nil {
 					return err
 				}
 
+				dep.UpdateFile(latest)
+
 				fmt.Printf("downloading %s ...\n", latest.Name)
-				if err := download.FromURL(latest.Name, latest.URL); err != nil {
+				if err := dep.Download(); err != nil {
 					return err
 				}
 

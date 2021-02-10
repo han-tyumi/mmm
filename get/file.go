@@ -18,35 +18,41 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package get
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 
 	"github.com/han-tyumi/mcf"
 	"github.com/han-tyumi/mmm/utils"
 )
 
+// ErrNoFiles is returned when there are no files for a mod.
+var ErrNoFiles = errors.New("no files")
+
+// ErrVersionUnsupported is returned when a mod doesn't have any files supporting the specified version.
+var ErrVersionUnsupported = errors.New("version unsupported")
+
 // LatestFileByMod returns the latest mod file for a mod and an optional Minecraft version.
 func LatestFileByMod(version string, mod *mcf.Mod) (*mcf.ModFile, error) {
 	if version == "" {
 		if len(mod.LatestFiles) == 0 {
-			return nil, fmt.Errorf("no files for %s", mod.Name)
+			return nil, ErrNoFiles
 		}
 
 		return &mod.LatestFiles[0].ModFile, nil
 	}
 
-	return LatestFileByID(version, mod.ID, mod.Name)
+	return LatestFileByID(version, mod.ID)
 }
 
 // LatestFileByID returns the latest mod file for a mod's ID and a Minecraft version.
-func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) {
+func LatestFileByID(version string, id uint) (*mcf.ModFile, error) {
 	files, err := mcf.Files(id)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no files for %s", name)
+		return nil, ErrNoFiles
 	}
 
 	var latest *mcf.ModFile
@@ -94,7 +100,7 @@ func LatestFileByID(version string, id uint, name string) (*mcf.ModFile, error) 
 	}
 
 	if latest == nil {
-		return nil, fmt.Errorf("%s does not support %s", name, version)
+		return nil, ErrVersionUnsupported
 	}
 
 	return latest, nil

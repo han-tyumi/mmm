@@ -19,10 +19,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/han-tyumi/mmm/config"
-	"github.com/han-tyumi/mmm/download"
 	"github.com/han-tyumi/mmm/utils"
 
 	"github.com/spf13/cobra"
@@ -50,15 +48,14 @@ var installCmd = &cobra.Command{
 
 			go ch.Do(func() error {
 				if !force {
-					info, err := os.Stat(dep.File)
-					if err == nil && info.Size() == int64(dep.Size) {
+					if downloaded, _ := dep.Downloaded(); downloaded {
 						fmt.Printf("%s already installed\n", dep.Name)
 						return nil
 					}
 				}
 
 				fmt.Printf("downloading %s ...\n", dep.Name)
-				return download.FromURL(dep.File, dep.URL)
+				return dep.Download()
 			})
 		}
 
