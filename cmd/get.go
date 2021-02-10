@@ -30,6 +30,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var version string
+
 var getCmd = &cobra.Command{
 	Use:   "get {id | slug}...",
 	Short: "Downloads unmanaged mods to the current working directory by slug or ID",
@@ -41,15 +43,17 @@ var getCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		version := viper.GetString("version")
-		fmt.Printf("using Minecraft version %s\n", version)
+		if version == "" {
+			version = viper.GetString("version")
+		}
+
+		if version != "" {
+			fmt.Printf("using Minecraft version %s\n", version)
+		}
 
 		if err := get.LatestFileForEachArg(args, version, func(_ *mcf.Mod, latest *mcf.ModFile) error {
 			fmt.Printf("downloading %s ...\n", latest.Name)
-			if err := download.FromURL(latest.Name, latest.URL); err != nil {
-				return err
-			}
-			return nil
+			return download.FromURL(latest.Name, latest.URL)
 		}); err != nil {
 			utils.Error(err)
 		}
@@ -61,7 +65,5 @@ var getCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	getCmd.Flags().StringP("version", "v", "", "Minecraft version to download latest files for")
-
-	viper.BindPFlag("version", getCmd.Flags().Lookup("version"))
+	getCmd.Flags().StringVarP(&version, "version", "v", "", "Minecraft version to download latest files for")
 }
