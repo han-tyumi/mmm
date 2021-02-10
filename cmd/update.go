@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/han-tyumi/mmm/config"
 	"github.com/han-tyumi/mmm/utils"
@@ -35,23 +36,29 @@ var updateCmd = &cobra.Command{
 			utils.Error("dependency file not found")
 		}
 
-		version := viper.GetString("version")
-		fmt.Printf("using Minecraft version %s\n", version)
+		batch := false
+		viperVersion := viper.GetString("version")
 
-		depMap, err := config.DepMapSync()
+		if version != "" && version != viperVersion {
+			batch = true
+			fmt.Printf("updating mods from %s to %s ...\n", viperVersion, version)
+		} else {
+			version = viperVersion
+			fmt.Printf("updating mods to use latest %s files ...\n", version)
+		}
+
+		depMap, err := config.DepMap()
 		if err != nil {
 			utils.Error(err)
 		}
+		clone := depMap.Clone()
 
-		ch := utils.NewErrCh(len(depMap))
-		for slug, dep := range depMap {
-			slug := slug
-			dep := dep
-
+		ch := utils.NewErrCh(depMap.Len())
+		depMap.Each(func(slug string, dep *config.Dependency) {
 			go ch.Do(func() error {
 				latest, err := dep.LatestFile(version)
 				if err != nil {
-					return err
+					return fmt.Errorf("%s: %s", slug, err)
 				}
 
 				if dep.SameFile(latest) {
@@ -61,26 +68,51 @@ var updateCmd = &cobra.Command{
 
 				fmt.Printf("removing %s ...\n", dep.File)
 				if err := dep.RemoveFile(); err != nil {
-					return err
+					return fmt.Errorf("%s: %s", dep.File, err)
 				}
 
 				dep.UpdateFile(latest)
 
 				fmt.Printf("downloading %s ...\n", latest.Name)
 				if err := dep.Download(); err != nil {
-					return err
+					return fmt.Errorf("%s: %s", latest.Name, err)
 				}
 
-				return config.SetDep(slug, dep)
+				if batch {
+					depMap.Set(slug, dep)
+					return nil
+				}
+
+				if err := config.SetDep(slug, dep); err != nil {
+					return fmt.Errorf("%s: %s", slug, err)
+				}
+				return nil
 			})
+		})
+
+		revertUpdates := func(err error) {
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Println("reverting updates; you may need to reinstall ...")
+			if err := clone.Write(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			os.Exit(1)
 		}
 
 		ch.Wait(func(err error) error {
 			if err != nil {
-				utils.Error(err)
+				revertUpdates(err)
 			}
 			return err
 		})
+
+		if batch {
+			viper.Set("version", version)
+			if err := depMap.Write(); err != nil {
+				viper.Set("version", viperVersion)
+				revertUpdates(err)
+			}
+		}
 
 		fmt.Println("done")
 	},
@@ -88,4 +120,6 @@ var updateCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(updateCmd)
+
+	updateCmd.Flags().StringVarP(&version, "version", "v", "", "Minecraft version to update mods to")
 }

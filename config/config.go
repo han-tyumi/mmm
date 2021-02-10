@@ -65,16 +65,43 @@ func DepMapSync() (map[string]*Dependency, error) {
 
 // DepMap safely returns a concurrency safe map of mod slugs to Dependencies for the user's configuration file.
 func DepMap() (*DependencyMap, error) {
-	raw, err := DepMapSync()
+	deps, err := DepMapSync()
 	if err != nil {
 		return nil, err
 	}
 
 	depMap := &DependencyMap{
-		deps: raw,
+		deps: deps,
 	}
 
 	return depMap, nil
+}
+
+// Clone returns a copy of this dependency map.
+func (d *DependencyMap) Clone() *DependencyMap {
+	deps := make(map[string]*Dependency, len(d.deps))
+
+	d.mu.Lock()
+	for slug, dep := range d.deps {
+		deps[slug] = dep.Clone()
+	}
+	d.mu.Unlock()
+
+	return &DependencyMap{
+		deps: deps,
+	}
+}
+
+// Each calls the provided function for each mapped slug and dependency.
+func (d *DependencyMap) Each(cb func(slug string, dep *Dependency)) {
+	for slug, dep := range d.deps {
+		cb(slug, dep)
+	}
+}
+
+// Len returns the length of the DependencyMap.
+func (d *DependencyMap) Len() int {
+	return len(d.deps)
 }
 
 // Get safely returns a Dependency for a given mod's slug if it's present in the map.

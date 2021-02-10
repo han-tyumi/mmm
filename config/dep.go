@@ -36,6 +36,18 @@ type Dependency struct {
 	Size     uint      `mapstructure:"size"`
 }
 
+// Clone returns a copy of the dependency.
+func (d *Dependency) Clone() *Dependency {
+	return &Dependency{
+		ID:       d.ID,
+		Name:     d.Name,
+		URL:      d.URL,
+		File:     d.File,
+		Uploaded: d.Uploaded,
+		Size:     d.Size,
+	}
+}
+
 // Download downloads the dependency to the current working directory.
 func (d *Dependency) Download() error {
 	return download.FromURL(d.File, d.URL)
